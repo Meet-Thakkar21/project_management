@@ -15,9 +15,33 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add login logic here
+  
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+  
+      const data = await response.json();
+  
+      if (response.ok) {
+        // Save token and user info (e.g., localStorage or state)
+        localStorage.setItem('token', data.token);
+        console.log('Login successful:', data);
+  
+        // Redirect to dashboard or home page
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Login error:', data.message);
+        alert(data.message);
+      }
+    } catch (error) {
+      console.error('Server error:', error);
+      alert('An error occurred. Please try again later.');
+    }
   };
 
   return (
@@ -25,7 +49,7 @@ const Login = () => {
       {/* Left Side - Login Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
         <div className="w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Habu</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Management Tool</h2>
           <h3 className="text-xl text-gray-700 mb-8">Please Enter your Account details</h3>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -104,14 +128,9 @@ const Login = () => {
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-emerald-500 to-teal-400 relative">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative w-full h-full flex flex-col items-center justify-center p-12 text-white">
-          <h2 className="text-3xl font-bold mb-6">What's our Jobseekers Said.</h2>
-          <blockquote className="text-lg mb-8">
-            "Search and find your dream job is now easier than ever. Just browse a job and apply if you need to."
+          <h2 className="text-3xl font-bold mb-6">Welcome to Project Management Tool</h2>
+          <blockquote className="text-lg mb-8">"Project management is like juggling three balls – time, cost, and quality. Program management is like juggling three balls while also trying to eat an apple.""Search and find your dream job is now easier than ever. Just browse a job and apply if you need to."
           </blockquote>
-          <div className="text-center">
-            <p className="font-medium text-xl">Mas Parjono</p>
-            <p className="text-white/80">UI Designer at Google</p>
-          </div>
           
           <div className="absolute bottom-12 left-12 flex space-x-4">
             <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all">
