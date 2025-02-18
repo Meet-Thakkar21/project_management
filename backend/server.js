@@ -15,7 +15,11 @@ const app = express();
 app.use(express.json()); // Middleware to parse JSON requests
 
 
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // Replace with your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true,
+}));
 // Routes
 app.use('/api/auth', authRoutes);
 

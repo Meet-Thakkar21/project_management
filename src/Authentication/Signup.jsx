@@ -65,7 +65,7 @@ const Signup = () => {
       {/* Left Side - Signup Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-white overflow-y-auto">
         <div className="w-full max-w-xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Habu</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Taskify</h2>
           <h3 className="text-xl text-gray-700 mb-8">Create your account</h3>
           
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -234,15 +234,10 @@ const Signup = () => {
         <div className="relative w-full h-full flex flex-col items-center justify-center p-12 text-white">
           <div className="testimonial-slider">
             <div className="testimonial active">
-              <h2 className="text-3xl font-bold mb-6">What's our Jobseekers Said.</h2>
-              <blockquote className="text-lg mb-8">
-                "Search and find your dream job is now easier than ever. Just browse a job and apply if you need to."
-              </blockquote>
-              <div className="text-center">
-                <p className="font-medium text-xl">Mas Parjono</p>
-                <p className="text-white/80">UI Designer at Google</p>
-              </div>
-            </div>
+            <h2 className="text-3xl font-bold mb-6">Welcome to Project Management Tool</h2>
+          <blockquote className="text-lg mb-8">"Project management is like juggling three balls – time, cost, and quality. Program management is like juggling three balls while also trying to eat an apple.""Search and find your dream job is now easier than ever. Just browse a job and apply if you need to."
+          </blockquote>
+          </div>
           </div>
           
           <div className="absolute bottom-12 left-12 flex space-x-4">

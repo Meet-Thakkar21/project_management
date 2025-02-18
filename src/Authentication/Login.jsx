@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaGoogle, FaGithub } from 'react-icons/fa';
 import './Login.css';
 
@@ -7,6 +7,16 @@ const Login = () => {
     email: '',
     password: ''
   });
+
+  const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com"; // Replace with your actual Google Client ID
+
+  useEffect(() => {
+    // Initialize Google Sign-In
+    window.google?.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleSuccess,
+    });
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -43,6 +53,33 @@ const Login = () => {
       alert('An error occurred. Please try again later.');
     }
   };
+
+  const handleGoogleSuccess = (response) => {
+    const credential = response.credential;
+    console.log('Google JWT Token:', credential);
+  
+    // Send the Google token to your backend for login/signup
+    fetch('http://localhost:5000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ googleToken: credential }),
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.token) {
+        // Save token and user info
+        localStorage.setItem('token', data.token);
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Login failed:', data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Server error:', error);
+      alert('An error occurred. Please try again later.');
+    });
+  };
+  
 
   return (
     <div className="min-h-screen flex">
@@ -104,10 +141,15 @@ const Login = () => {
             </div>
 
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+              {/* Google Login Button */}
+              <button
+                onClick={() => window.google?.accounts.id.prompt()}
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+              >
                 <FaGoogle className="text-gray-600 mr-2" />
                 <span className="text-gray-700">Google</span>
               </button>
+
               <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
                 <FaGithub className="text-gray-600 mr-2" />
                 <span className="text-gray-700">GitHub</span>
@@ -129,17 +171,9 @@ const Login = () => {
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative w-full h-full flex flex-col items-center justify-center p-12 text-white">
           <h2 className="text-3xl font-bold mb-6">Welcome to Project Management Tool</h2>
-          <blockquote className="text-lg mb-8">"Project management is like juggling three balls – time, cost, and quality. Program management is like juggling three balls while also trying to eat an apple.""Search and find your dream job is now easier than ever. Just browse a job and apply if you need to."
+          <blockquote className="text-lg mb-8">
+            "Project management is like juggling three balls – time, cost, and quality. Program management is like juggling three balls while also trying to eat an apple."
           </blockquote>
-          
-          <div className="absolute bottom-12 left-12 flex space-x-4">
-            <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all">
-              ←
-            </button>
-            <button className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition-all">
-              →
-            </button>
-          </div>
         </div>
       </div>
     </div>
