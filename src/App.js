@@ -6,6 +6,8 @@ import Login from './Authentication/Login';
 import Signup from './Authentication/Signup';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Home from './Components/Home';
+import AdminDashboard from './Components/AdminDashboard';
+import EmployeeDashboard from './Components/EmployeeDashboard';
 
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
 function App() {
@@ -16,6 +18,8 @@ function App() {
           <Route path = "/" element = {<Home />}/>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>

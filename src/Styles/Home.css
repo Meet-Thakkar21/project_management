@@ -4,6 +4,26 @@
   background-color: #f8f9fa;
 }
 
+/* admin-dashboard styling */
+.admin-dashboard-btn {
+  background-color: #ff4b5c;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+}
+
+.admin-dashboard-btn:hover {
+  background-color: #ff1e40;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Navbar Styles */
 .navbar {
   background-color: white;

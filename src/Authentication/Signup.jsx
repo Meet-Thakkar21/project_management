@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { FaGoogle, FaGithub } from 'react-icons/fa';
 import './Signup.css';
-
+import { useNavigate } from 'react-router-dom';
 const Signup = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -51,6 +52,8 @@ const Signup = () => {
       console.log(data);
   
       if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
         alert(data.message); // Success message
       } else {
         alert(data.message); // Error message
@@ -192,6 +195,7 @@ const Signup = () => {
             <button
               type="submit"
               className="submit-button w-full"
+              onClick={()=> navigate('/')}
             >
               Create Account
             </button>

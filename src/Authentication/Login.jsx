@@ -40,10 +40,11 @@ const Login = () => {
       if (response.ok) {
         // Save token and user info (e.g., localStorage or state)
         localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));  // Store user data
         console.log('Login successful:', data);
   
         // Redirect to dashboard or home page
-        window.location.href = '/dashboard';
+        window.location.href = '/';
       } else {
         console.error('Login error:', data.message);
         alert(data.message);
@@ -125,6 +126,7 @@ const Login = () => {
             <button
               type="submit"
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition-all"
+              
             >
               Sign In
             </button>

@@ -1,9 +1,27 @@
-// Home.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaUsers, FaVideo, FaComments, FaTasks } from 'react-icons/fa';
+import { useNavigate } from "react-router-dom";
 import '../Styles/Home.css';
 
 const Home = () => {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      setUser(JSON.parse(storedUser)); 
+    }
+  }, []);
+  
+  console.log(user);// Parse stored user data
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Remove token
+    localStorage.removeItem('user'); // Remove user data from storage
+    
+    navigate('/login'); // Redirect to login page
+  };
+
   return (
     <div className="home-container">
       {/* Navbar */}
@@ -13,8 +31,21 @@ const Home = () => {
           <div className="nav-links">
             <button className="nav-btn">Features</button>
             <button className="nav-btn">About Us</button>
-            <button className="nav-btn login">Login</button>
-            <button className="nav-btn signup">Sign Up</button>
+            {user ? (
+              <>
+                <p>Welcome, {user.email}</p>
+                <button className="nav-btn" onClick={handleLogout}>Logout</button>
+              </>
+            ) : (
+              <>
+                <button className="nav-btn login" onClick={() => navigate('/login')}>
+                  Login
+                </button>
+                <button className="nav-btn signup" onClick={() => navigate('/signup')}>
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -67,6 +98,15 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* Admin Dashboard Button */}
+      {user && user.role === "project_admin" && (
+        <div className="admin-dashboard">
+          <button className="admin-btn" onClick={() => navigate('/admin-dashboard')}>
+            Go to Admin Dashboard
+          </button>
+        </div>
+      )}
 
       {/* About Us Section */}
       <section className="about">
