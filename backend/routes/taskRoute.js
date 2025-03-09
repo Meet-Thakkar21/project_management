@@ -10,7 +10,7 @@ router.post("/:adminId", authMiddleware, async (req, res) => {
   try {
     const { name, project, assignedTo, deadline, status } = req.body;
     const { adminId } = req.params;// Logged-in admin ID
-    console.log(name,project,assignedTo,deadline);
+    console.log(name,project,assignedTo,deadline,adminId);
     if (!name || !project || !assignedTo || !deadline) {
       return res.status(400).json({ message: "All fields are required!" });
     }

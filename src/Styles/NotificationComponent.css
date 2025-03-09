@@ -1,0 +1,270 @@
+/* NotificationsComponent.css */
+.notifications-component {
+  position: relative;
+}
+
+.notification-icon-container {
+  position: relative;
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-icon {
+  width: 24px;
+  height: 24px;
+  color: #666;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #ff5757;
+  color: white;
+  font-size: 10px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notifications-panel {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  width: 320px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 500px;
+  display: flex;
+  flex-direction: column;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+.notifications-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-btn svg {
+  width: 16px;
+  height: 16px;
+  color: #666;
+}
+
+.notifications-list {
+  overflow-y: auto;
+  max-height: 350px;
+}
+
+.no-notifications {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+}
+
+.notification-item {
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.2s ease;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item.unread {
+  background-color: #f0f4ff;
+}
+
+.notification-content {
+  padding: 12px 15px;
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.notification-icon-wrapper {
+  margin-right: 12px;
+  padding-top: 2px;
+}
+
+.notification-type-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+}
+
+.notification-type-icon.task {
+  background-color: #4361ee;
+}
+
+.notification-type-icon.project {
+  background-color: #9c27b0;
+}
+
+.notification-type-icon.team {
+  background-color: #ff9800;
+}
+
+.notification-type-icon.message {
+  background-color: #4caf50;
+}
+
+.notification-text {
+  flex: 1;
+}
+
+.notification-message {
+  margin: 0;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.notification-time {
+  font-size: 11px;
+  color: #888;
+}
+
+.notification-actions {
+  display: flex;
+  align-items: center;
+}
+
+.expand-icon {
+  width: 16px;
+  height: 16px;
+  color: #888;
+  transition: transform 0.2s ease;
+}
+
+.expand-icon.expanded {
+  transform: rotate(180deg);
+}
+
+.notification-details {
+  padding: 0 15px 12px 51px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.notification-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mark-read-btn, 
+.action-btn {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.mark-read-btn {
+  background-color: transparent;
+  border: 1px solid #ddd;
+  color: #666;
+}
+
+.mark-read-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.action-btn {
+  background-color: #4361ee;
+  color: white;
+  border: none;
+}
+
+.action-btn:hover {
+  background-color: #3250d2;
+}
+
+.notifications-footer {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #eee;
+}
+
+.view-all-btn,
+.mark-all-read-btn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.view-all-btn {
+  color: #4361ee;
+}
+
+.mark-all-read-btn {
+  color: #666;
+}
+
+.view-all-btn:hover,
+.mark-all-read-btn:hover {
+  text-decoration: underline;
+}
+
+/* For smaller screens */
+@media (max-width: 768px) {
+  .notifications-panel {
+    width: 280px;
+    right: -100px;
+  }
+}

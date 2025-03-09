@@ -58,15 +58,18 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchTasks = async () => {
+    try {
+      // console.log(adminId);
+      
+      const response = await axios.get(`http://localhost:5000/api/tasks/${adminId}`);
+      setTasks(response.data);
+      console.log("Tasks: " + response.data)
+    } catch (error) {
+      console.error('Error fetching tasks:', error.response?.data?.message || error.message);
+    }
+  };
 
-const fetchTasks = () => {
-  const token = localStorage.getItem("token");
-  console.log(adminId)
-  // Fetch tasks related to the logged-in admin
-  axios.get(`http://localhost:5000/api/tasks/${adminId}`)
-    .then(response => setTasks(response.data))
-    .catch(error => console.error('Error fetching tasks:', error));
-}
   const handleCreateProject = async () => {
     if (!newProject.name || !newProject.description) {
         alert("Please fill out all fields!");
@@ -119,6 +122,7 @@ useEffect(() => {
   if (adminId) {
     fetchProjects();  // Ensure adminId is set before fetching
     fetchTeamMembers();
+    fetchTasks();
   }
 }, [adminId]); 
 
@@ -144,9 +148,6 @@ const addMember = async () => {
 };
 
 
-useEffect(() => {
-  fetchTasks();
-}, []);
 
 
 const handleInputChange = (e) => {
@@ -318,7 +319,7 @@ const createTask = async () => {
                   </button>
                 </div>
                 <div className="task-list">
-                  {tasks.map(task => (
+                  {Array.isArray(tasks) && tasks.map(task => (
                     <div className="task-item" key={task.id}>
                       <div className="task-status">
                         <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
@@ -327,7 +328,7 @@ const createTask = async () => {
                       </div>
                       <div className="task-info">
                         <h4>{task.name}</h4>
-                        <p>{task.project}</p>
+                        <p>{task.project.name}</p>
                       </div>
                     
                       <div className="task-deadline">
@@ -473,10 +474,10 @@ const createTask = async () => {
             </tr>
           </thead>
           <tbody>
-            {tasks.map(task => (
+            {Array.isArray(tasks) && tasks.map(task => (
               <tr key={task._id}>
                 <td>{task.name}</td>
-                <td>{task.project?.name || "N/A"}</td>
+                <td>{task.project.name || "N/A"}</td>
                 <td>{task.assignedTo?.email || "Unassigned"}</td>
                 <td>{new Date(task.deadline).toLocaleDateString()}</td>
                 <td>{task.status}</td>
