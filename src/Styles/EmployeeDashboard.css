@@ -263,7 +263,22 @@
   color: #333;
 }
 
-.task-filter-btn,
+.task-filter-btn {
+  display: flex;
+  gap: 10px;
+}
+
+.filter-btn {
+  background-color: #f0f4ff;
+  color: #4361ee;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 .view-all-btn {
   background-color: #f0f4ff;
   color: #4361ee;
@@ -275,8 +290,13 @@
   transition: all 0.2s ease;
 }
 
-.task-filter-btn:hover,
-.view-all-btn:hover {
+.filter-btn.active {
+  background-color: #4361ee;
+  color: white;
+}
+
+.view-all-btn:hover,
+.filter-btn:hover {
   background-color: #4361ee;
   color: white;
 }

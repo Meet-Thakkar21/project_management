@@ -80,6 +80,7 @@ const EmployeeDashboard = () => {
 
   // Function to mark a task as complete
   const markTaskComplete = async (taskId) => {
+    console.log(taskId);
     try {
       const token = localStorage.getItem("token");
       console.log(token);
@@ -93,15 +94,13 @@ const EmployeeDashboard = () => {
       if (!task) return;
 
       // Toggle status
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+      const newStatus = task.status === "completed" ? "pending" : "completed";
 
       // Update in backend
-      await axios.patch(`http://localhost:5000/api/employee/tasks/${taskId}/status`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        status: newStatus === 'completed' ? 'completed' : 'pending'
-      });
+      await axios.patch(`http://localhost:5000/api/employee/tasks/${taskId}/status`, 
+        { status: newStatus }, // Body
+        { headers: { Authorization: `Bearer ${token}` } } // Headers should be separate
+      );
 
       // Update local state
       setTasks(tasks.map(task =>
@@ -114,8 +113,8 @@ const EmployeeDashboard = () => {
   };
 
   // Count completed tasks
-  const completedTasks = tasks.filter(task => task.status === 'completed').length;
-  const pendingTasks = tasks.filter(task => task.status === 'pending').length;
+  const completedTasks = tasks.filter(task => task.status === "completed").length;
+  const pendingTasks = tasks.filter(task => task.status === "pending").length;
 
   // If loading, show a loading indicator
   if (loading) {

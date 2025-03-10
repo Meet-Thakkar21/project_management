@@ -29,7 +29,7 @@ router.patch('/tasks/:taskId/status', authMiddleware, async (req, res) => {
         const employeeId = req.user.userId;
 
         // Validate status
-        if (!['pending', 'in_progress', 'completed'].includes(status)) {
+        if (!["pending", "in_progrss", "completed"].includes(status)) {
             return res.status(400).json({ message: 'Invalid status value' });
         }
 
@@ -45,12 +45,12 @@ router.patch('/tasks/:taskId/status', authMiddleware, async (req, res) => {
         await task.save();
 
         // If completing a task, update project progress
-        if (status === 'completed') {
+        if (status === "completed") {
             await Project.findByIdAndUpdate(
                 task.project,
                 { $inc: { completed: 1 } }
             );
-        } else if (task.status === 'completed' && status !== 'completed') {
+        } else if (task.status === "completed" && status !== "completed") {
             // If un-completing a task
             await Project.findByIdAndUpdate(
                 task.project,

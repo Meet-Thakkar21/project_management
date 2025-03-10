@@ -1,9 +1,9 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../Styles/AdminDashboard.css';
 import axios from 'axios';
 const AdminDashboard = () => {
-
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modalType, setModalType] = useState('');
   const [projects, setProjects] = useState([]);
@@ -21,9 +21,9 @@ const AdminDashboard = () => {
     deadline: "",    // YYYY-MM-DD format
     status: "pending", // Default status
   });
-  
 
-  
+
+
   const fetchProjects = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -50,7 +50,7 @@ const AdminDashboard = () => {
   const fetchTeamMembers = async () => {
     try {
       // console.log(adminId);
-      
+
       const response = await axios.get(`http://localhost:5000/api/teams/${adminId}/members`);
       setTeamMembers(response.data);
     } catch (error) {
@@ -61,7 +61,7 @@ const AdminDashboard = () => {
   const fetchTasks = async () => {
     try {
       // console.log(adminId);
-      
+
       const response = await axios.get(`http://localhost:5000/api/tasks/${adminId}`);
       setTasks(response.data);
       console.log("Tasks: " + response.data)
@@ -72,128 +72,128 @@ const AdminDashboard = () => {
 
   const handleCreateProject = async () => {
     if (!newProject.name || !newProject.description) {
-        alert("Please fill out all fields!");
-        return;
+      alert("Please fill out all fields!");
+      return;
     }
 
     try {
-        const token = localStorage.getItem("token"); // Get token from localStorage
+      const token = localStorage.getItem("token"); // Get token from localStorage
 
-        const response = await axios.post(
-            "http://localhost:5000/api/projects",
-            newProject,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`, // Include Authorization header
-                    "Content-Type": "application/json", // Ensure correct content type
-                },
-            }
-        );
-
-        if (response.status === 201) {
-            // Update local state
-            setProjects([...projects, response.data]);
-
-            // Reset form
-            setNewProject({ name: "", description: "" });
-
-            // Close modal
-            setShowModal(false);
+      const response = await axios.post(
+        "http://localhost:5000/api/projects",
+        newProject,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include Authorization header
+            "Content-Type": "application/json", // Ensure correct content type
+          },
         }
-    } catch (error) {
-        console.error("Error adding project:", error);
-        alert("Failed to add project.");
-    }
-};
+      );
 
-useEffect(() => {
-  const storedUser = localStorage.getItem('user'); // Fetch user object
-  if (storedUser) {
-    const user = JSON.parse(storedUser); // Parse JSON string
-    setadminId(user.id); // Set adminId
-    console.log(adminId);
-  } else {
-    console.error('User not found in localStorage');
-  }
-}, []);
+      if (response.status === 201) {
+        // Update local state
+        setProjects([...projects, response.data]);
 
-useEffect(() => {
-  console.log(adminId);
-  if (adminId) {
-    fetchProjects();  // Ensure adminId is set before fetching
-    fetchTeamMembers();
-    fetchTasks();
-  }
-}, [adminId]); 
+        // Reset form
+        setNewProject({ name: "", description: "" });
 
-
-
-const addMember = async () => {
-  try {
-    const response = await axios.post(`http://localhost:5000/api/teams/${adminId}/add-member`, { email, role });
-
-    const newMember = {
-      _id: response.data.member._id, // Member ID
-      email: response.data.member.email, // Member Email
-      role: response.data.member.role // Role assigned by admin
-    };
-
-    setTeamMembers([...teamMembers, newMember]); // Update UI with new member
-    setShowModal(false);
-    setEmail('');
-    setRole('');
-  } catch (error) {
-    alert(error.response?.data?.message || 'Error adding member');
-  }
-};
-
-
-
-
-const handleInputChange = (e) => {
-  const { name, value } = e.target;
-  setNewTask({ ...newTask, [name]: value });
-};
-
-
-const createTask = async () => {
-  try {
-    const token = localStorage.getItem("token"); // Get token from localStorage
-    console.log("name: " + newTask.name);
-    const taskData = {
-      name: newTask.name,          // Task name
-      project: newTask.project,    // Project ID
-      assignedTo: newTask.assignedTo, // User ID of the assigned person
-      deadline: newTask.deadline,  // Task deadline
-      status: newTask.status || "pending", // Default status if not provided
-    };
-
-    const response = await axios.post(
-      `http://localhost:5000/api/tasks/${adminId}`,
-      taskData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`, // Include Authorization header
-          "Content-Type": "application/json", // Ensure correct content type
-        },
+        // Close modal
+        setShowModal(false);
       }
-    );
-
-    if (response.status === 201) {
-      // Update local state
-      setTasks([...tasks, response.data.task]);
-
-      // Reset form
-      setNewTask({ name: "", project: "", assignedTo: "", deadline: "", status: "" });
-
-      // Close modal
-      setShowModal(false);
+    } catch (error) {
+      console.error("Error adding project:", error);
+      alert("Failed to add project.");
     }
-  } catch (error) {
-    console.error("Error creating task:", error);
-    alert(error.response?.data?.message || "Failed to create task.");
-  }
-};
+  };
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user'); // Fetch user object
+    if (storedUser) {
+      const user = JSON.parse(storedUser); // Parse JSON string
+      setadminId(user.id); // Set adminId
+      console.log(adminId);
+    } else {
+      console.error('User not found in localStorage');
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log(adminId);
+    if (adminId) {
+      fetchProjects();  // Ensure adminId is set before fetching
+      fetchTeamMembers();
+      fetchTasks();
+    }
+  }, [adminId]);
+
+
+
+  const addMember = async () => {
+    try {
+      const response = await axios.post(`http://localhost:5000/api/teams/${adminId}/add-member`, { email, role });
+
+      const newMember = {
+        _id: response.data.member._id, // Member ID
+        email: response.data.member.email, // Member Email
+        role: response.data.member.role // Role assigned by admin
+      };
+
+      setTeamMembers([...teamMembers, newMember]); // Update UI with new member
+      setShowModal(false);
+      setEmail('');
+      setRole('');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Error adding member');
+    }
+  };
+
+
+
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewTask({ ...newTask, [name]: value });
+  };
+
+
+  const createTask = async () => {
+    try {
+      const token = localStorage.getItem("token"); // Get token from localStorage
+      console.log("name: " + newTask.name);
+      const taskData = {
+        name: newTask.name,          // Task name
+        project: newTask.project,    // Project ID
+        assignedTo: newTask.assignedTo, // User ID of the assigned person
+        deadline: newTask.deadline,  // Task deadline
+        status: newTask.status || "pending", // Default status if not provided
+      };
+
+      const response = await axios.post(
+        `http://localhost:5000/api/tasks/${adminId}`,
+        taskData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Include Authorization header
+            "Content-Type": "application/json", // Ensure correct content type
+          },
+        }
+      );
+
+      if (response.status === 201) {
+        // Update local state
+        setTasks([...tasks, response.data.task]);
+
+        // Reset form
+        setNewTask({ name: "", project: "", assignedTo: "", deadline: "", status: "" });
+
+        // Close modal
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.error("Error creating task:", error);
+      alert(error.response?.data?.message || "Failed to create task.");
+    }
+  };
 
 
 
@@ -205,9 +205,22 @@ const createTask = async () => {
   const closeModal = () => {
     setShowModal(false);
   };
-
+  useEffect(() => {
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+    }, 500);
+  }, [activeTab]);
   const renderDashboardContent = () => {
-    switch(activeTab) {
+    if (loading) {
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      );
+    }
+    switch (activeTab) {
       case 'dashboard':
         return (
           <div className="dashboard-overview">
@@ -251,65 +264,65 @@ const createTask = async () => {
             </div>
 
             <div className="dashboard-content">
-            <div className="recent-projects">
+              <div className="recent-projects">
                 <div className="section-header">
-                    <h2>Project Overview</h2>
-                    <button className="action-button" onClick={() => setShowModal(true)}>
-                        <i className="fas fa-plus"></i> New Project
-                    </button>
+                  <h2>Project Overview</h2>
+                  <button className="action-button" onClick={() => setShowModal(true)}>
+                    <i className="fas fa-plus"></i> New Project
+                  </button>
                 </div>
                 <div className="project-list">
-                    {projects.map(project => (
-                        <div className="project-card" key={project._id}>
-                            <h3>{project.name}</h3>
-                            <p>{project.description}</p>
-                            <div className="project-progress">
-                                <div className="progress-info">
-                                    <span>Progress</span>
-                                    <span>{project.progress}%</span>
-                                </div>
-                                <div className="progress-bar">
-                                    <div className="progress-fill" style={{ width: `${project.progress}%` }}></div>
-                                </div>
-                            </div>
-                            <div className="project-details">
-                                <div className="detail-item">
-                                    <i className="fas fa-users"></i>
-                                    <span>{project.members?.length || 0} Members</span>
-
-                                </div>
-                                <div className="detail-item">
-                                    <i className="fas fa-tasks"></i>
-                                    <span>{project.completed}/{project.tasks} Tasks</span>
-                                </div>
-                            </div>
-                            <button className="view-button">View Details</button>
+                  {projects.map(project => (
+                    <div className="project-card" key={project._id}>
+                      <h3>{project.name}</h3>
+                      <p>{project.description}</p>
+                      <div className="project-progress">
+                        <div className="progress-info">
+                          <span>Progress</span>
+                          <span>{project.progress}%</span>
                         </div>
-                    ))}
-                </div>
-            
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: `${project.progress}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="project-details">
+                        <div className="detail-item">
+                          <i className="fas fa-users"></i>
+                          <span>{project.members?.length || 0} Members</span>
 
-            {showModal && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <h3>Create New Project</h3>
-                        <input
-                            type="text"
-                            placeholder="Project Name"
-                            value={newProject.name}
-                            onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                        />
-                        <textarea
-                            placeholder="Project Description"
-                            value={newProject.description}
-                            onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                        />
-                        <button onClick={handleCreateProject}>Create</button>
-                        <button onClick={() => setShowModal(false)}>Cancel</button>
+                        </div>
+                        <div className="detail-item">
+                          <i className="fas fa-tasks"></i>
+                          <span>{project.completed}/{project.tasks} Tasks</span>
+                        </div>
+                      </div>
+                      <button className="view-button">View Details</button>
                     </div>
+                  ))}
                 </div>
-            )}
-        </div>
+
+
+                {showModal && (
+                  <div className="modal">
+                    <div className="modal-content">
+                      <h3>Create New Project</h3>
+                      <input
+                        type="text"
+                        placeholder="Project Name"
+                        value={newProject.name}
+                        onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                      />
+                      <textarea
+                        placeholder="Project Description"
+                        value={newProject.description}
+                        onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                      />
+                      <button onClick={handleCreateProject}>Create</button>
+                      <button onClick={() => setShowModal(false)}>Cancel</button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="upcoming-tasks">
                 <div className="section-header">
@@ -330,7 +343,7 @@ const createTask = async () => {
                         <h4>{task.name}</h4>
                         <p>{task.project.name}</p>
                       </div>
-                    
+
                       <div className="task-deadline">
                         <i className="far fa-calendar-alt"></i>
                         <span>{task.deadline}</span>
@@ -403,121 +416,121 @@ const createTask = async () => {
       case 'members':
         return (
           <div className="members-container">
-          <div className="section-header">
-            <h2>Team Members</h2>
-            <button className="action-button" onClick={() => setShowModal(true)}>
-              <i className="fas fa-plus"></i> Add Member
-            </button>
-          </div>
-    
-          {/* Team Members Table */}
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Role</th>
-                <th>Email</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {teamMembers.map((member) => (
-                <tr key={member._id}>
-                <td>{member.memberId?.firstName} {member.memberId?.lastName}</td>
-                <td>{member.role}</td>
-                <td>{member.memberId?.email}</td>
-                  <td>
-                    <button className="icon-button">
-                      <i className="fas fa-trash-alt"></i>
-                    </button>
-                  </td>
+            <div className="section-header">
+              <h2>Team Members</h2>
+              <button className="action-button" onClick={() => setShowModal(true)}>
+                <i className="fas fa-plus"></i> Add Member
+              </button>
+            </div>
+
+            {/* Team Members Table */}
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Role</th>
+                  <th>Email</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-    
-          {/* Add Member Modal */}
-          {showModal && (
-            <div className="modal">
-              <div className="modal-content">
-                <h3>Add Member</h3>
-                <label>Email</label>
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <label>Role</label>
-                <input type="text" value={role} onChange={(e) => setRole(e.target.value)} />    
-                <button onClick={addMember}>Add Member</button>
-                <button onClick={() => setShowModal(false)}>Cancel</button>
+              </thead>
+              <tbody>
+                {teamMembers.map((member) => (
+                  <tr key={member._id}>
+                    <td>{member.memberId?.firstName} {member.memberId?.lastName}</td>
+                    <td>{member.role}</td>
+                    <td>{member.memberId?.email}</td>
+                    <td>
+                      <button className="icon-button">
+                        <i className="fas fa-trash-alt"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Add Member Modal */}
+            {showModal && (
+              <div className="modal">
+                <div className="modal-content">
+                  <h3>Add Member</h3>
+                  <label>Email</label>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                  <label>Role</label>
+                  <input type="text" value={role} onChange={(e) => setRole(e.target.value)} />
+                  <button onClick={addMember}>Add Member</button>
+                  <button onClick={() => setShowModal(false)}>Cancel</button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-        );
-      case 'tasks': 
-      return(
-        <div className="tasks-container">
-        <div className="section-header">
-          <h2>Tasks Management</h2>
-          <button className="action-button" onClick={() => setShowModal(true)}>
-            <i className="fas fa-plus"></i> Create Task
-          </button>
-        </div>
-    
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Task Name</th>
-              <th>Project</th>
-              <th>Assigned To</th>
-              <th>Deadline</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Array.isArray(tasks) && tasks.map(task => (
-              <tr key={task._id}>
-                <td>{task.name}</td>
-                <td>{task.project.name || "N/A"}</td>
-                <td>{task.assignedTo?.email || "Unassigned"}</td>
-                <td>{new Date(task.deadline).toLocaleDateString()}</td>
-                <td>{task.status}</td>
-                <td>
-                  <button className="icon-button"><i className="fas fa-edit"></i></button>
-                  <button className="icon-button"><i className="fas fa-trash-alt"></i></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-    
-        {showModal && (
-          <div className="modal">
-            <div className="modal-content">
-              <h3>Create Task</h3>
-              <input type="text" name="name" placeholder="Task Name" onChange={handleInputChange} />
-              <select name="project" onChange={handleInputChange}>
-                <option value="">Select Project</option>
-                {projects.map(proj => (
-                  <option key={proj._id} value={proj._id}>{proj.name}</option>
-                ))}
-              </select>
-              <select name="assignedTo" onChange={handleInputChange}>
-                <option value="">Assign To</option>
-                {teamMembers.map(member => (
-                  <option key={member.memberId._id} value={member.memberId._id}>
-                    {member.memberId.email}
-                  </option>
-                ))}
-              </select>
-              <input type="date" name="deadline" onChange={handleInputChange} />
-              <button onClick={createTask}>Create</button>
-              <button onClick={() => setShowModal(false)}>Cancel</button>
-            </div>
+            )}
           </div>
-        )}
-      </div>
         );
-      
+      case 'tasks':
+        return (
+          <div className="tasks-container">
+            <div className="section-header">
+              <h2>Tasks Management</h2>
+              <button className="action-button" onClick={() => setShowModal(true)}>
+                <i className="fas fa-plus"></i> Create Task
+              </button>
+            </div>
+
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Task Name</th>
+                  <th>Project</th>
+                  <th>Assigned To</th>
+                  <th>Deadline</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.isArray(tasks) && tasks.map(task => (
+                  <tr key={task._id}>
+                    <td>{task.name}</td>
+                    <td>{task.project.name || "N/A"}</td>
+                    <td>{task.assignedTo?.email || "Unassigned"}</td>
+                    <td>{new Date(task.deadline).toLocaleDateString()}</td>
+                    <td>{task.status}</td>
+                    <td>
+                      <button className="icon-button"><i className="fas fa-edit"></i></button>
+                      <button className="icon-button"><i className="fas fa-trash-alt"></i></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {showModal && (
+              <div className="modal">
+                <div className="modal-content">
+                  <h3>Create Task</h3>
+                  <input type="text" name="name" placeholder="Task Name" onChange={handleInputChange} />
+                  <select name="project" onChange={handleInputChange}>
+                    <option value="">Select Project</option>
+                    {projects.map(proj => (
+                      <option key={proj._id} value={proj._id}>{proj.name}</option>
+                    ))}
+                  </select>
+                  <select name="assignedTo" onChange={handleInputChange}>
+                    <option value="">Assign To</option>
+                    {teamMembers.map(member => (
+                      <option key={member.memberId._id} value={member.memberId._id}>
+                        {member.memberId.email}
+                      </option>
+                    ))}
+                  </select>
+                  <input type="date" name="deadline" onChange={handleInputChange} />
+                  <button onClick={createTask}>Create</button>
+                  <button onClick={() => setShowModal(false)}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
       default:
         return <div>Content not available</div>;
     }
@@ -529,7 +542,7 @@ const createTask = async () => {
     let modalContent;
     let modalTitle;
 
-    switch(modalType) {
+    switch (modalType) {
       case 'project':
         modalTitle = 'Create New Project';
         modalContent = (
@@ -675,7 +688,7 @@ const createTask = async () => {
   };
 
   return (
-    
+
     <div className="admin-dashboard">
       <div className="sidebar">
         <div className="brand">
