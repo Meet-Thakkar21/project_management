@@ -29,7 +29,7 @@ router.patch('/tasks/:taskId/status', authMiddleware, async (req, res) => {
         const employeeId = req.user.userId;
 
         // Validate status
-        if (!["pending", "in_progrss", "completed"].includes(status)) {
+        if (!["pending", "in_progress", "completed"].includes(status)) {
             return res.status(400).json({ message: 'Invalid status value' });
         }
 

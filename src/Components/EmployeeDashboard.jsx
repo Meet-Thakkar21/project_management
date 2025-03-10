@@ -9,6 +9,7 @@ import {
   UserGroupIcon,
   ChartBarIcon
 } from '@heroicons/react/outline';
+import TasksComponent from './TasksComponent';
 import TaskComponent from './TaskComponent';
 import TeamComponent from './TeamComponent';
 import NotificationComponent from './NotificationComponent';
@@ -231,10 +232,15 @@ const EmployeeDashboard = () => {
         );
       case 'tasks':
         return (
-          <TaskComponent tasks={tasks} markTaskComplete={markTaskComplete} />
+          <div className='tasks-container'>
+            <h1 className="page-title">My Assigned Tasks</h1>
+            <TasksComponent />
+          </div>
         );
       case 'teams':
-        return <TeamComponent teams={teams} />;
+        return (
+          <TeamComponent teams={teams} />
+        );
       case 'performance':
         return <h1>Performance Overview Coming Soon...</h1>;
       default:
