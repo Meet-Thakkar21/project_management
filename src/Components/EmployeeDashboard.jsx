@@ -21,6 +21,7 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -93,22 +94,18 @@ const EmployeeDashboard = () => {
 
       if (!task) return;
 
-      // Toggle status
       const newStatus = task.status === "completed" ? "pending" : "completed";
 
-      // Update in backend
-      await axios.patch(`http://localhost:5000/api/employee/tasks/${taskId}/status`, 
+      await axios.patch(`http://localhost:5000/api/employee/tasks/${taskId}/status`,
         { status: newStatus }, // Body
         { headers: { Authorization: `Bearer ${token}` } } // Headers should be separate
       );
 
-      // Update local state
       setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
     } catch (err) {
       console.error('Error updating task:', err);
-      // You might want to show an error notification here
     }
   };
 
@@ -135,42 +132,147 @@ const EmployeeDashboard = () => {
     );
   }
 
+  const renderDashboardContent = () => {
+    if (loading) {
+      return (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
+        </div>
+      );
+    }
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <div className='dashboard-overview'>
+            <h1 className="page-title">Employee Dashboard</h1>
+
+            <div className="stats-container">
+              <div className="stat-card">
+                <div className="stat-icon tasks-icon">
+                  <ClipboardListIcon />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-number">{tasks.length}</div>
+                  <div className="stat-label">Total Tasks</div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon pending-icon">
+                  <ClipboardListIcon />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-number">{pendingTasks}</div>
+                  <div className="stat-label">Pending Tasks</div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon completed-icon">
+                  <CheckCircleIcon />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-number">{completedTasks}</div>
+                  <div className="stat-label">Completed Tasks</div>
+                </div>
+              </div>
+
+              <div className="stat-card">
+                <div className="stat-icon teams-icon">
+                  <UserGroupIcon />
+                </div>
+                <div className="stat-content">
+                  <div className="stat-number">{teams.length}</div>
+                  <div className="stat-label">Team Memberships</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="dashboard-content">
+              {/* Using TaskComponent */}
+              <TaskComponent tasks={tasks} markTaskComplete={markTaskComplete} />
+
+              {/* Right Panel with Team Info and Upcoming Deadlines */}
+              <div className="right-panel">
+                {/* Using TeamComponent */}
+                <TeamComponent teams={teams} />
+
+                {/* Upcoming Deadlines */}
+                <div className="deadlines-section">
+                  <div className="section-header">
+                    <h2>Upcoming Deadlines</h2>
+                  </div>
+
+                  <div className="deadlines-list">
+                    {tasks
+                      .filter(task => task.status === 'pending')
+                      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                      .slice(0, 3)
+                      .map(task => (
+                        <div key={task.id} className="deadline-card">
+                          <div className="deadline-date">
+                            {new Date(task.deadline).toLocaleDateString('en-US', {
+                              year: 'numeric', month: '2-digit', day: '2-digit'
+                            })}
+                          </div>
+                          <div className="deadline-info">
+                            <h3>{task.title}</h3>
+                            <p>Project: {task.project}</p>
+                          </div>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'tasks':
+        return (
+          <TaskComponent tasks={tasks} markTaskComplete={markTaskComplete} />
+        );
+      case 'teams':
+        return <TeamComponent teams={teams} />;
+      case 'performance':
+        return <h1>Performance Overview Coming Soon...</h1>;
+      default:
+        return <div>Content not available</div>;
+    }
+  };
+
   return (
     <div className="employee-dashboard">
-      {/* Sidebar */}
       <div className="sidebar">
         <div className="logo">
           <h1>Taskify</h1>
         </div>
         <ul className="nav-items">
-          <li className="nav-item active">
+          <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
             <HomeIcon className="nav-icon" />
             <span>Dashboard</span>
           </li>
-          <li className="nav-item">
+          <li className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>
             <ClipboardListIcon className="nav-icon" />
             <span>My Tasks</span>
           </li>
-          <li className="nav-item">
+          <li className={`nav-item ${activeTab === 'teams' ? 'active' : ''}`} onClick={() => setActiveTab('teams')}>
             <UserGroupIcon className="nav-icon" />
             <span>My Teams</span>
           </li>
-          <li className="nav-item">
+          <li className={`nav-item ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>
             <ChartBarIcon className="nav-icon" />
             <span>My Performance</span>
           </li>
         </ul>
       </div>
-
-      {/* Main Content */}
       <div className="main-content">
-        {/* Header */}
         <div className="header">
           <div className="search-bar">
             <input type="text" placeholder="Search..." />
           </div>
           <div className="user-info">
-            {/* Using NotificationComponent */}
             <NotificationComponent pendingTasks={pendingTasks} />
             <div className="user-avatar">
               <span className="avatar-text">
@@ -182,99 +284,18 @@ const EmployeeDashboard = () => {
             </div>
           </div>
         </div>
-
-        {/* Breadcrumb */}
-        <div className="breadcrumb">
-          <span>Home</span> / <span>Dashboard</span>
-        </div>
-
-        <h1 className="page-title">Employee Dashboard</h1>
-
-        {/* Stats Cards */}
-        <div className="stats-container">
-          <div className="stat-card">
-            <div className="stat-icon tasks-icon">
-              <ClipboardListIcon />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{tasks.length}</div>
-              <div className="stat-label">Total Tasks</div>
+        <main className="content">
+          <div className="page-header">
+            <div className="breadcrumb">
+              <span>Home</span>
+              <span>/</span>
+              <span>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}</span>
             </div>
           </div>
-
-          <div className="stat-card">
-            <div className="stat-icon pending-icon">
-              <ClipboardListIcon />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{pendingTasks}</div>
-              <div className="stat-label">Pending Tasks</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon completed-icon">
-              <CheckCircleIcon />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{completedTasks}</div>
-              <div className="stat-label">Completed Tasks</div>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon teams-icon">
-              <UserGroupIcon />
-            </div>
-            <div className="stat-content">
-              <div className="stat-number">{teams.length}</div>
-              <div className="stat-label">Team Memberships</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Dashboard Content */}
-        <div className="dashboard-content">
-          {/* Using TaskComponent */}
-          <TaskComponent tasks={tasks} markTaskComplete={markTaskComplete} />
-
-          {/* Right Panel with Team Info and Upcoming Deadlines */}
-          <div className="right-panel">
-            {/* Using TeamComponent */}
-            <TeamComponent teams={teams} />
-
-            {/* Upcoming Deadlines */}
-            <div className="deadlines-section">
-              <div className="section-header">
-                <h2>Upcoming Deadlines</h2>
-              </div>
-
-              <div className="deadlines-list">
-                {tasks
-                  .filter(task => task.status === 'pending')
-                  .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-                  .slice(0, 3)
-                  .map(task => (
-                    <div key={task.id} className="deadline-card">
-                      <div className="deadline-date">
-                        {new Date(task.deadline).toLocaleDateString('en-US', {
-                          year: 'numeric', month: '2-digit', day: '2-digit'
-                        })}
-                      </div>
-                      <div className="deadline-info">
-                        <h3>{task.title}</h3>
-                        <p>Project: {task.project}</p>
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            </div>
-          </div>
-        </div>
+          {renderDashboardContent()}
+        </main>
       </div>
     </div>
   );
 };
-
 export default EmployeeDashboard;
