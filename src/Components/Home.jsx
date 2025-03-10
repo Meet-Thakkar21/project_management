@@ -22,6 +22,20 @@ const Home = () => {
     navigate('/login'); // Redirect to login page
   };
 
+  const handleGetStarted = () => {
+    if (user) {
+      if(user.role === "employee") {
+        navigate("/employee-dashboard");
+      } else if(user.role === "project_admin") {
+        navigate("/admin-dashboard");
+      } else {
+        navigate("/login");
+      }
+    } else {
+      navigate("/login");
+    }
+  };
+
   return (
     <div className="home-container">
       {/* Navbar */}
@@ -61,7 +75,7 @@ const Home = () => {
             with our comprehensive project management solution.
           </p>
           <div className="hero-buttons">
-            <button className="primary-btn">Get Started</button>
+            <button className="primary-btn" onClick={handleGetStarted}>Get Started</button>
             <button className="secondary-btn">Learn More</button>
           </div>
         </div>

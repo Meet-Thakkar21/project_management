@@ -5,7 +5,7 @@ const Project = require("../models/Projects");
 const User = require("../models/User");
 const authMiddleware = require("../Middleware/authMiddleware");
 
-// ✅ CREATE A NEW TASK
+// CREATE A NEW TASK
 router.post("/:adminId", authMiddleware, async (req, res) => {
   try {
     const { name, project, assignedTo, deadline, status } = req.body;
@@ -31,7 +31,7 @@ router.post("/:adminId", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ GET ALL TASKS (Only tasks created by the logged-in admin)
+// GET ALL TASKS (Only tasks created by the logged-in admin)
 router.get("/:adminId", async (req, res) => {
   try {
     const { adminId } = req.params;
@@ -43,7 +43,7 @@ router.get("/:adminId", async (req, res) => {
   }
 });
 
-// ✅ GET A SPECIFIC TASK BY ID (Only if created by the logged-in admin)
+// GET A SPECIFIC TASK BY ID (Only if created by the logged-in admin)
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const adminId = req.user.id;
@@ -58,7 +58,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ UPDATE A TASK (Only if created by the logged-in admin)
+// UPDATE A TASK (Only if created by the logged-in admin)
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const { name, project, assignedTo, deadline, status } = req.body;
@@ -79,7 +79,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
   }
 });
 
-// ✅ DELETE A TASK (Only if created by the logged-in admin)
+// DELETE A TASK (Only if created by the logged-in admin)
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const adminId = req.user.id;
