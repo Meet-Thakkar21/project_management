@@ -1,13 +1,15 @@
 // TeamComponent.jsx
 import React from 'react';
+import { useNavigate } from "react-router-dom";
 import { UserGroupIcon } from '@heroicons/react/outline';
 
 const TeamComponent = ({ teams }) => {
+  const navigate = useNavigate();
   return (
     <div className="teams-section">
       <div className="section-header">
         <h2>My Teams</h2>
-        <button className="view-all-btn">View All</button>
+        <button className="view-all-btn" onClick={() => navigate('/signup')}>View All</button>
       </div>
       
       <div className="teams-list">
@@ -20,7 +22,6 @@ const TeamComponent = ({ teams }) => {
               <h3>{team.name}</h3>
               <p>{team.members} members</p>
             </div>
-            <button className="view-team-btn">View</button>
           </div>
         ))}
       </div>

@@ -233,13 +233,17 @@ const EmployeeDashboard = () => {
       case 'tasks':
         return (
           <div className='tasks-container'>
-            <h1 className="page-title">My Assigned Tasks</h1>
+            <h3 className="page-title">My Assigned Tasks</h3>
             <TasksComponent />
           </div>
         );
       case 'teams':
         return (
-          <TeamComponent teams={teams} />
+          <div className='tasks-container'>
+            <h3 className="page-title">My Teams</h3>
+            <TeamComponent teams={teams} />
+          </div>
+
         );
       case 'performance':
         return <h1>Performance Overview Coming Soon...</h1>;
