@@ -138,6 +138,7 @@ router.get("/teams/:projectName", authMiddleware, async (req, res) => {
     }
 });
 
+//Get user profile
 router.get('/profile', authMiddleware, async (req, res) => {
     try {
         const employeeId = req.user.userId;
@@ -152,6 +153,40 @@ router.get('/profile', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Error fetching employee profile:', error);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+//Update user profile
+router.put('/profile', authMiddleware, async (req, res) => {
+    try {
+        const { firstName, lastName, dob, gender, skills } = req.body;
+
+        const profileFields = {};
+        if (firstName !== undefined) profileFields.firstName = firstName;
+        if (lastName !== undefined) profileFields.lastName = lastName;
+        if (dob !== undefined && dob !== '') profileFields.dob = dob;
+        if (gender !== undefined) profileFields.gender = gender;
+        if (skills !== undefined) {
+            profileFields.skills = Array.isArray(skills) ? skills : [skills];
+        }
+
+        const user = await User.findByIdAndUpdate(
+            req.user.userId,
+            { $set: profileFields },
+            { new: true }
+        ).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json(user);
+    } catch (err) {
+        console.error('Error updating profile:', err.message);
+        if (err.name === 'ValidationError') {
+            const messages = Object.values(err.errors).map(val => val.message);
+            return res.status(400).json({ msg: messages.join(', ') });
+        }
+
+        res.status(500).json({ msg: 'Server Error' });
     }
 });
 

@@ -474,11 +474,11 @@
   .stats-container {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .dashboard-content {
     flex-direction: column;
   }
-  
+
   .right-panel {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -489,30 +489,36 @@
   .stats-container {
     grid-template-columns: 1fr;
   }
-  
+
   .right-panel {
     grid-template-columns: 1fr;
   }
-  
+
   .sidebar {
     width: 70px;
   }
-  
+
   .sidebar .logo h1,
   .sidebar .nav-item span {
     display: none;
   }
-  
+
   .nav-icon {
     margin-right: 0;
   }
-  
+
   .nav-item {
     justify-content: center;
   }
-  
+
   .search-bar input {
     width: 100%;
     max-width: 200px;
   }
+}
+
+.coming-soon-image {
+  max-width: 250px;
+  height: auto;
+  margin: 0 auto;
 }

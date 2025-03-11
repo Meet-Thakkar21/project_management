@@ -4,6 +4,7 @@ import axios from 'axios';
 import { CheckCircleIcon } from '@heroicons/react/outline';
 import {
   BellIcon,
+  UserIcon,
   HomeIcon,
   ClipboardListIcon,
   UserGroupIcon,
@@ -13,6 +14,7 @@ import TasksComponent from './TasksComponent';
 import TaskComponent from './TaskComponent';
 import TeamsComponent from './TeamsComponent';
 import TeamComponent from './TeamComponent';
+import ProfileComponent from './ProfileComponent';
 import NotificationComponent from './NotificationComponent';
 import '../Styles/EmployeeDashboard.css';
 import '../Styles/loading.css'
@@ -244,10 +246,25 @@ const EmployeeDashboard = () => {
             <h3 className="page-title">My Teams</h3>
             <TeamsComponent />
           </div>
-
+        );
+      case 'profile':
+        return (
+          <div>
+            <h3 className="page-title">My Profile</h3>
+            <ProfileComponent />
+          </div>
         );
       case 'performance':
-        return <h1>Performance Overview Coming Soon...</h1>;
+        return (
+          <div>
+            <h3 className="page-title">Performance Overview</h3>
+            <img
+              src="comingsoon.jpg"
+              alt="Coming Soon"
+              className="coming-soon-image"
+            />
+          </div>
+        );
       default:
         return <div>Content not available</div>;
     }
@@ -271,6 +288,10 @@ const EmployeeDashboard = () => {
           <li className={`nav-item ${activeTab === 'teams' ? 'active' : ''}`} onClick={() => setActiveTab('teams')}>
             <UserGroupIcon className="nav-icon" />
             <span>My Teams</span>
+          </li>
+          <li className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
+            <UserIcon className="nav-icon" />
+            <span>My Profile</span>
           </li>
           <li className={`nav-item ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>
             <ChartBarIcon className="nav-icon" />
