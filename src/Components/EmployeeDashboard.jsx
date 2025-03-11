@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/outline';
 import TasksComponent from './TasksComponent';
 import TaskComponent from './TaskComponent';
+import TeamsComponent from './TeamsComponent';
 import TeamComponent from './TeamComponent';
 import NotificationComponent from './NotificationComponent';
 import '../Styles/EmployeeDashboard.css';
@@ -197,7 +198,7 @@ const EmployeeDashboard = () => {
               {/* Right Panel with Team Info and Upcoming Deadlines */}
               <div className="right-panel">
                 {/* Using TeamComponent */}
-                <TeamComponent teams={teams} />
+                <TeamComponent teams={teams} setActiveTab={setActiveTab} />
 
                 {/* Upcoming Deadlines */}
                 <div className="deadlines-section">
@@ -241,7 +242,7 @@ const EmployeeDashboard = () => {
         return (
           <div className='tasks-container'>
             <h3 className="page-title">My Teams</h3>
-            <TeamComponent teams={teams} />
+            <TeamsComponent />
           </div>
 
         );

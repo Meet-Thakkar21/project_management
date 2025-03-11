@@ -1,17 +1,15 @@
 // TeamComponent.jsx
 import React from 'react';
-import { useNavigate } from "react-router-dom";
 import { UserGroupIcon } from '@heroicons/react/outline';
 
-const TeamComponent = ({ teams }) => {
-  const navigate = useNavigate();
+const TeamComponent = ({ teams, setActiveTab }) => {
   return (
     <div className="teams-section">
       <div className="section-header">
         <h2>My Teams</h2>
-        <button className="view-all-btn" onClick={() => navigate('/signup')}>View All</button>
+        <button className="view-all-btn" onClick={() => setActiveTab('teams')}>View All</button>
       </div>
-      
+
       <div className="teams-list">
         {teams.map(team => (
           <div key={team.id} className="team-card">

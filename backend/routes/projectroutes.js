@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Project = require('../models/Projects');
-const authMiddleware = require('../Middleware/authMiddleware'); // Fixing the missing file issue
+const authMiddleware = require('../Middleware/authMiddleware');
 
 // Create a new project
 router.post('/', authMiddleware, async (req, res) => {

@@ -70,9 +70,8 @@ router.get('/teams', authMiddleware, async (req, res) => {
         const employeeId = req.user.userId;
 
         // Find all teams where this employee is a member
-        const teams = await Team.find({
-            'members.memberId': employeeId
-        }).populate('adminId', 'firstName lastName email');
+        const teams = await Team.find({ 'members.memberId': employeeId })
+            .populate('adminId', 'firstName lastName email')
 
         // Format the response
         const formattedTeams = await Promise.all(teams.map(async (team) => {
@@ -96,6 +95,46 @@ router.get('/teams', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Error fetching employee teams:', error);
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+// Get Project details of logged-in user
+router.get("/teams/:projectName", authMiddleware, async (req, res) => {
+    try {
+        const { projectName } = req.params;
+
+        // Find project by name
+        const project = await Project.findOne({ name: projectName });
+        if (!project) {
+            return res.status(404).json({ error: "Project not found" });
+        }
+
+        const team = await Team.findOne({ projectId: project._id })
+            .populate("adminId", "name email") // Populate admin details
+            .populate({
+                path: "members.memberId",
+                select: "name email",
+            });
+
+        if (!team) {
+            return res.status(404).json({ error: "Team not found" });
+        }
+
+        const formattedTeam = {
+            _id: team._id,
+            project: { name: project.name },
+            admin: team.adminId,
+            members: team.members.map(m => ({
+                _id: m.memberId._id,
+                name: m.memberId.name,
+                email: m.memberId.email,
+            })),
+        };
+
+        res.json(formattedTeam);
+    } catch (error) {
+        console.error("Error fetching team:", error);
+        res.status(500).json({ error: "Server error" });
     }
 });
 
