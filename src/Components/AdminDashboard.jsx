@@ -14,6 +14,7 @@ const AdminDashboard = () => {
   const [role, setRole] = useState('');
   const [adminId, setadminId] = useState('');
   const [tasks, setTasks] = useState([]);
+  const [selectedProject, setSelectedProject] = useState(null);
   const [newTask, setNewTask] = useState({
     name: "",
     project: "",     // Project ID (from dropdown)
@@ -21,8 +22,6 @@ const AdminDashboard = () => {
     deadline: "",    // YYYY-MM-DD format
     status: "pending", // Default status
   });
-
-
 
   const fetchProjects = async () => {
     try {
@@ -33,14 +32,31 @@ const AdminDashboard = () => {
         return;
       }
 
-      const response = await axios.get("http://localhost:5000/api/projects", {
+      const response = await axios.get("http://localhost:5000/api/projects/my-projects", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      console.log("Projects fetched:", response.data); // Debug log
-      setProjects(response.data.projects);
+      const projectsWithProgress = response.data.projects.map(project => {
+        const totalTasks = project.tasks || 0;
+        const completedTasks = project.completed || 0;
+        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+        return {
+          ...project,
+          progress,
+          tasks: totalTasks,
+          completed: completedTasks
+        };
+      });
+
+      console.log(projectsWithProgress);
+      const sortedProjects = projectsWithProgress.sort((a, b) => {
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+
+      setProjects(sortedProjects);
     } catch (error) {
       console.error("Error fetching projects:", error.response?.data || error);
       alert("Failed to fetch projects. " + (error.response?.data?.message || ""));
@@ -52,7 +68,17 @@ const AdminDashboard = () => {
       // console.log(adminId);
 
       const response = await axios.get(`http://localhost:5000/api/teams/${adminId}/members`);
-      setTeamMembers(response.data);
+      const uniqueMembers = new Set();
+      const uniqueMembersArray = [];
+
+      response.data.forEach(member => {
+        if (!uniqueMembers.has(member.memberId?._id)) {
+          uniqueMembers.add(member.memberId?._id);
+          uniqueMembersArray.push(member);
+        }
+      });
+      console.log(uniqueMembersArray);
+      setTeamMembers(uniqueMembersArray);
     } catch (error) {
       console.error('Error fetching team members:', error.response?.data?.message || error.message);
     }
@@ -71,17 +97,22 @@ const AdminDashboard = () => {
   };
 
   const handleCreateProject = async () => {
-    if (!newProject.name || !newProject.description) {
-      alert("Please fill out all fields!");
+    if (!newProject.name || !newProject.description || newProject.members.length === 0) {
+      alert("Please fill out all fields and select at least one member!");
       return;
     }
 
     try {
       const token = localStorage.getItem("token"); // Get token from localStorage
-
+      const projectData = {
+        name: newProject.name,
+        description: newProject.description,
+        members: newProject.members || [], // Ensure members are included
+      };
+      console.log(projectData);
       const response = await axios.post(
         "http://localhost:5000/api/projects",
-        newProject,
+        projectData,
         {
           headers: {
             Authorization: `Bearer ${token}`, // Include Authorization header
@@ -91,19 +122,28 @@ const AdminDashboard = () => {
       );
 
       if (response.status === 201) {
-        // Update local state
-        setProjects([...projects, response.data]);
-
-        // Reset form
-        setNewProject({ name: "", description: "" });
-
-        // Close modal
+        setProjects([...projects, response.data.project]);
+        setNewProject({ name: "", description: "", members: [] });
         setShowModal(false);
       }
     } catch (error) {
       console.error("Error adding project:", error);
       alert("Failed to add project.");
     }
+  };
+
+  const handleMemberSelection = (memberId) => {
+    setNewProject((prevProject) => {
+      const isSelected = prevProject.members.includes(memberId);
+      console.log(isSelected);
+      console.log(memberId);
+      return {
+        ...prevProject,
+        members: isSelected
+          ? prevProject.members.filter(id => id !== memberId) // Remove if unchecked
+          : [...prevProject.members, memberId], // Add if checked
+      };
+    });
   };
 
   useEffect(() => {
@@ -146,9 +186,6 @@ const AdminDashboard = () => {
       alert(error.response?.data?.message || 'Error adding member');
     }
   };
-
-
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -195,22 +232,30 @@ const AdminDashboard = () => {
     }
   };
 
-
+  // Modal Handling Code
+  const openProjectDetailsModal = (project) => {
+    setSelectedProject(project);
+    setModalType('projectDetails');
+    setShowModal(true);
+  };
 
   const openModal = (type) => {
     setModalType(type);
     setShowModal(true);
   };
-
   const closeModal = () => {
     setShowModal(false);
+    // setEditingTask(null);
+    setSelectedProject(null);
   };
+
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
     }, 500);
   }, [activeTab]);
+
   const renderDashboardContent = () => {
     if (loading) {
       return (
@@ -257,7 +302,7 @@ const AdminDashboard = () => {
                   <i className="fas fa-check-circle"></i>
                 </div>
                 <div className="stat-details">
-                  <h3>{tasks.filter(task => task.status === 'Completed').length}</h3>
+                  <h3>{tasks.filter(task => task.status === "completed").length}</h3>
                   <p>Completed Tasks</p>
                 </div>
               </div>
@@ -267,15 +312,15 @@ const AdminDashboard = () => {
               <div className="recent-projects">
                 <div className="section-header">
                   <h2>Project Overview</h2>
-                  <button className="action-button" onClick={() => setShowModal(true)}>
+                  <button className="action-button" onClick={() => openModal('project')}>
                     <i className="fas fa-plus"></i> New Project
                   </button>
                 </div>
                 <div className="project-list">
-                  {projects.map(project => (
+                  {projects.slice(0, 4).map(project => (
                     <div className="project-card" key={project._id}>
                       <h3>{project.name}</h3>
-                      <p>{project.description}</p>
+                      {/* <p>{project.description}</p> */}
                       <div className="project-progress">
                         <div className="progress-info">
                           <span>Progress</span>
@@ -296,13 +341,12 @@ const AdminDashboard = () => {
                           <span>{project.completed}/{project.tasks} Tasks</span>
                         </div>
                       </div>
-                      <button className="view-button">View Details</button>
+                      <button className="view-button" onClick={() => openProjectDetailsModal(project)}>View Details</button>
                     </div>
                   ))}
                 </div>
 
-
-                {showModal && (
+                {/* {showModal && (
                   <div className="modal">
                     <div className="modal-content">
                       <h3>Create New Project</h3>
@@ -317,11 +361,26 @@ const AdminDashboard = () => {
                         value={newProject.description}
                         onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
                       />
+                      <label>Select Team Members:</label>
+                      <select
+                        multiple
+                        value={newProject.members}
+                        onChange={(e) =>
+                          setNewProject({
+                            ...newProject,
+                            members: Array.from(e.target.selectedOptions, (option) => option.value),
+                          })
+                        }
+                      >{teamMembers.map((member) => (
+                        <option key={member._id} value={member._id}>
+                          {member.firstName} {member.lastName}
+                        </option>
+                      ))}</select>
                       <button onClick={handleCreateProject}>Create</button>
                       <button onClick={() => setShowModal(false)}>Cancel</button>
                     </div>
                   </div>
-                )}
+                )} */}
               </div>
 
               <div className="upcoming-tasks">
@@ -539,152 +598,201 @@ const AdminDashboard = () => {
   const renderModal = () => {
     if (!showModal) return null;
 
-    let modalContent;
-    let modalTitle;
-
     switch (modalType) {
       case 'project':
-        modalTitle = 'Create New Project';
-        modalContent = (
-          <form className="modal-form">
-            <div className="form-group">
-              <label>Project Name</label>
-              <input type="text" placeholder="Enter project name" />
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modalheader">
+                <h2>Create New Project</h2>
+                <button className="close-button" onClick={closeModal}>X</button>
+              </div>
+              <div className="modal-body">
+                <form className="modal-form">
+                  <div className="form-group">
+                    <label>Project Name</label>
+                    <input
+                      type="text"
+                      placeholder="Enter project name"
+                      value={newProject.name}
+                      onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Description</label>
+                    <textarea
+                      placeholder="Enter project description"
+                      value={newProject.description}
+                      onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                    ></textarea>
+                  </div>
+                  <div className="form-group">
+                    <label>Team Members</label>
+                    <div className="team-members-list">
+                      {teamMembers.map(member => (
+                        <div key={member.memberId._id} className="team-member-item">
+                          <input
+                            type="checkbox"
+                            id={member.memberId._id}
+                            checked={newProject.members.includes(member.memberId._id)}
+                            onChange={() => handleMemberSelection(member.memberId._id)}
+                          />
+                          <label htmlFor={member.memberId._id}>
+                            {member.memberId.firstName} {member.memberId.lastName}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="form-buttons">
+                    <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+                    <button type="submit" className="submit-button" onClick={handleCreateProject}>Create Project</button>
+                  </div>
+                </form>
+              </div>
             </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea placeholder="Enter project description"></textarea>
-            </div>
-            <div className="form-group">
-              <label>Start Date</label>
-              <input type="date" />
-            </div>
-            <div className="form-group">
-              <label>End Date</label>
-              <input type="date" />
-            </div>
-            <div className="form-group">
-              <label>Team Members</label>
-              <select multiple>
-                {teamMembers.map(member => (
-                  <option key={member.id} value={member.id}>{member.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-buttons">
-              <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
-              <button type="submit" className="submit-button">Create Project</button>
-            </div>
-          </form>
+          </div>
         );
         break;
-      case 'task':
-        modalTitle = 'Assign New Task';
-        modalContent = (
-          <form className="modal-form">
-            <div className="form-group">
-              <label>Task Title</label>
-              <input type="text" placeholder="Enter task title" />
-            </div>
-            <div className="form-group">
-              <label>Project</label>
-              <select>
-                <option value="">Select Project</option>
-                {projects.map(project => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea placeholder="Enter task description"></textarea>
-            </div>
-            <div className="form-group">
-              <label>Assign To</label>
-              <select>
-                <option value="">Select Team Member</option>
-                {teamMembers.map(member => (
-                  <option key={member.id} value={member.id}>{member.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Priority</label>
-              <select>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Deadline</label>
-              <input type="date" />
-            </div>
-            <div className="form-buttons">
-              <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
-              <button type="submit" className="submit-button">Create Task</button>
-            </div>
-          </form>
-        );
-        break;
-      case 'member':
-        modalTitle = 'Add Team Member';
-        modalContent = (
-          <form className="modal-form">
-            <div className="form-group">
-              <label>Full Name</label>
-              <input type="text" placeholder="Enter full name" />
-            </div>
-            <div className="form-group">
-              <label>Email</label>
-              <input type="email" placeholder="Enter email address" />
-            </div>
-            <div className="form-group">
-              <label>Role</label>
-              <input type="text" placeholder="Enter job role" />
-            </div>
-            <div className="form-group">
-              <label>Department</label>
-              <select>
-                <option value="">Select Department</option>
-                <option value="development">Development</option>
-                <option value="design">Design</option>
-                <option value="marketing">Marketing</option>
-                <option value="management">Management</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Assign to Projects</label>
-              <select multiple>
-                {projects.map(project => (
-                  <option key={project.id} value={project.id}>{project.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-buttons">
-              <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
-              <button type="submit" className="submit-button">Add Member</button>
-            </div>
-          </form>
-        );
-        break;
-      default:
-        modalContent = <div>Modal content not available</div>;
-    }
+      case 'projectDetails':
+        if (!selectedProject) return null;
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modalheader">
+                <h2>Project Details</h2>
+                <button className="close-button" onClick={closeModal}>X</button>
+              </div>
+              <div className="modal-body">
+                <div className="project-detail-container">
+                  <h3>{selectedProject.name}</h3>
+                  <p><strong>Description:</strong> {selectedProject.description}</p>
 
-    return (
-      <div className="modal-overlay">
-        <div className="modal">
-          <div className="modal-header">
-            <h2>{modalTitle}</h2>
-            <button className="close-button" onClick={closeModal}>×</button>
+                  <div className="progress-section">
+                    <h4>Progress: {selectedProject.progress}%</h4>
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${selectedProject.progress}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="detail-section">
+                    <h4>Tasks</h4>
+                    <p>{selectedProject.completed} completed of {selectedProject.tasks} total tasks</p>
+                  </div>
+
+                  {/* Team Members */}
+                  <div className="detail-section">
+                    <h4>Team Members</h4>
+                    <ul className="team-members">
+                      {selectedProject.members && selectedProject.members.length > 0 ? (
+                        selectedProject.members.map(member => (
+                          <li key={member._id}>
+                            {member.firstName} {member.lastName}
+                          </li>
+                        ))
+                      ) : (
+                        <li>No team members assigned</li>
+                      )}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="modal-body">
-            {modalContent}
-          </div>
-        </div>
-      </div>
-    );
+        );
+        break;
+      // case 'task':
+      //   modalTitle = 'Assign New Task';
+      //   modalContent = (
+      //     <form className="modal-form">
+      //       <div className="form-group">
+      //         <label>Task Title</label>
+      //         <input type="text" placeholder="Enter task title" />
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Project</label>
+      //         <select>
+      //           <option value="">Select Project</option>
+      //           {projects.map(project => (
+      //             <option key={project.id} value={project.id}>{project.name}</option>
+      //           ))}
+      //         </select>
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Description</label>
+      //         <textarea placeholder="Enter task description"></textarea>
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Assign To</label>
+      //         <select>
+      //           <option value="">Select Team Member</option>
+      //           {teamMembers.map(member => (
+      //             <option key={member.id} value={member.id}>{member.name}</option>
+      //           ))}
+      //         </select>
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Priority</label>
+      //         <select>
+      //           <option value="low">Low</option>
+      //           <option value="medium">Medium</option>
+      //           <option value="high">High</option>
+      //         </select>
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Deadline</label>
+      //         <input type="date" />
+      //       </div>
+      //       <div className="form-buttons">
+      //         <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+      //         <button type="submit" className="submit-button">Create Task</button>
+      //       </div>
+      //     </form>
+      //   );
+      //   break;
+      // case 'member':
+      //   modalTitle = 'Add Team Member';
+      //   modalContent = (
+      //     <form className="modal-form">
+      //       <div className="form-group">
+      //         <label>Full Name</label>
+      //         <input type="text" placeholder="Enter full name" />
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Email</label>
+      //         <input type="email" placeholder="Enter email address" />
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Role</label>
+      //         <input type="text" placeholder="Enter job role" />
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Department</label>
+      //         <select>
+      //           <option value="">Select Department</option>
+      //           <option value="development">Development</option>
+      //           <option value="design">Design</option>
+      //           <option value="marketing">Marketing</option>
+      //           <option value="management">Management</option>
+      //         </select>
+      //       </div>
+      //       <div className="form-group">
+      //         <label>Assign to Projects</label>
+      //         <select multiple>
+      //           {projects.map(project => (
+      //             <option key={project.id} value={project.id}>{project.name}</option>
+      //           ))}
+      //         </select>
+      //       </div>
+      //       <div className="form-buttons">
+      //         <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+      //         <button type="submit" className="submit-button">Add Member</button>
+      //       </div>
+      //     </form>
+      //   );
+      //   break;
+      default:
+        return null;
+    }
   };
 
   return (

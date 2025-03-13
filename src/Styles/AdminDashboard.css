@@ -345,6 +345,7 @@ body {
   background-color: var(--bg-color);
   border-radius: var(--radius);
   padding: 20px;
+  min-width: 250px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -414,6 +415,60 @@ body {
 .view-button:hover {
   background-color: var(--primary-color);
   color: var(--white);
+}
+
+/* Project Detail Style*/
+
+.project-detail-container h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #222;
+  margin: 10px 0;
+}
+
+.project-detail-container p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 15px;
+}
+
+.progress-section {
+  margin-bottom: 20px;
+}
+
+.detail-section h4 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.detail-section p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+}
+
+.team-members {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.team-members li {
+  background: #f9f9f9;
+  padding: 8px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #444;
+  display: flex;
+  align-items: center;
+}
+
+.team-members li::before {
+  content: "👤";
+  margin-right: 8px;
 }
 
 /* Tasks List Styles */
@@ -824,35 +879,31 @@ body {
   padding: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   z-index: 1000;
-  width: 300px;
+  width: 400px;
+  height: auto;
 }
 
-.modal-content {
+.modalheader {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 10px;
 }
 
-.modal-content input, 
-.modal-content textarea {
-  width: 100%;
-  padding: 8px;
-  margin: 5px 0;
-  border: 1px solid #ccc;
+.modalheader h2 {
+  font-size: 25px;
+  font-weight: 600;
+  color: #333;
 }
 
-.modal-content button {
-  margin-top: 10px;
-  padding: 8px;
-  background: #007bff;
-  color: white;
+.close-button {
+  background: none;
   border: none;
+  font-size: 20px;
   cursor: pointer;
+  color: #666;
 }
-
-.modal-content button:last-child {
-  background: red;
-}
-
 
 .form-group {
   display: flex;

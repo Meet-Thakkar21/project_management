@@ -1,16 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const Project = require('../models/Projects');
+const Task = require('../models/Task');
+const Team = require('../models/Team');
 const authMiddleware = require('../Middleware/authMiddleware');
 
 // Create a new project
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { name, description, members } = req.body;
+    if (!Array.isArray(members) || members.length === 0) {
+      return res.status(400).json({ message: "At least one member must be selected." });
+    }
     const newProject = new Project({
       name,
       description,
-      members : [],
+      members,
       createdBy: req.user.userId, // Assign project to logged-in user
     });
 
@@ -25,15 +30,36 @@ router.post('/', authMiddleware, async (req, res) => {
 // Get projects created by logged-in user
 router.get('/my-projects', authMiddleware, async (req, res) => {
   try {
-    const projects = await Project.find({ createdBy: req.user.userId }).populate('members', 'firstName lastName email');
-    res.json(projects);
+    const adminId = req.user.userId;
+    const projects = await Project.find({ createdBy: adminId }).populate("members", "firstName lastName email");
+    // const teams = await Team.find({ adminId }).populate("members.memberId", "firstName lastName email");
+    const projectsWithTaskCounts = await Promise.all(projects.map(async (project) => {
+      // const team = teams.find(team => team.adminId.toString() === project.createdBy.toString());
+      const totalTasks = await Task.countDocuments({ project: project._id });
+      const completedTasks = await Task.countDocuments({ project: project._id, status: "completed" });
+
+      return {
+        ...project.toObject(),
+        members: project.members.map(member => ({
+          _id: member._id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email
+        })),
+        tasks: totalTasks,  // Total tasks count
+        completed: completedTasks  // Completed tasks count
+      };
+    }));
+
+    res.json({ projects: projectsWithTaskCounts });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server Error' });
   }
 });
 
-router.get("/", authMiddleware, async (req, res) => {
+//Get All Projects
+router.get("/", async (req, res) => {
   try {
     const projects = await Project.find({});
     res.json({ projects });
