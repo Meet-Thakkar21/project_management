@@ -968,6 +968,9 @@ body {
   background-color: var(--secondary-color);
 }
 
+/*Confirm Delete*/
+
+
 /* Responsive Media Queries */
 @media (max-width: 1200px) {
   .stat-cards {

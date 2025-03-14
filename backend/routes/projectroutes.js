@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const Project = require('../models/Projects');
 const Task = require('../models/Task');
-const Team = require('../models/Team');
 const authMiddleware = require('../Middleware/authMiddleware');
 
 // Create a new project

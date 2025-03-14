@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../Styles/AdminDashboard.css';
+import '../Styles/loading.css';
+import NotificationComponent from './NotificationComponent';
 import axios from 'axios';
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(false);
@@ -10,6 +11,7 @@ const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [newProject, setNewProject] = useState({ name: '', description: '', members: [] });
   const [teamMembers, setTeamMembers] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
   const [adminId, setadminId] = useState('');
@@ -22,6 +24,8 @@ const AdminDashboard = () => {
     deadline: "",    // YYYY-MM-DD format
     status: "pending", // Default status
   });
+  const [editingTask, setEditingTask] = useState(null);
+  const [taskToDelete, setTaskToDelete] = useState(null);
 
   const fetchProjects = async () => {
     try {
@@ -84,6 +88,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      console.log(token);
+      if (!token) {
+        alert("No token found. Please log in again.");
+        return;
+      }
+      const profileResponse = await axios.get("http://localhost:5000/api/employee/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setUserProfile(profileResponse.data);
+    } catch (error) {
+      console.error("Error fetching profile:", error.response?.data || error);
+      alert("Failed to fetch Profile Data." + (error.response?.data?.message || ""));
+    }
+  };
+
   const fetchTasks = async () => {
     try {
       // console.log(adminId);
@@ -95,6 +119,8 @@ const AdminDashboard = () => {
       console.error('Error fetching tasks:', error.response?.data?.message || error.message);
     }
   };
+  const completedTasks = tasks.filter(task => task.status === "completed").length;
+  const pendingTasks = tasks.filter(task => task.status === "pending").length;
 
   const handleCreateProject = async () => {
     if (!newProject.name || !newProject.description || newProject.members.length === 0) {
@@ -160,8 +186,9 @@ const AdminDashboard = () => {
   useEffect(() => {
     console.log(adminId);
     if (adminId) {
-      fetchProjects();  // Ensure adminId is set before fetching
+      fetchProjects();
       fetchTeamMembers();
+      fetchUserProfile();
       fetchTasks();
     }
   }, [adminId]);
@@ -189,14 +216,17 @@ const AdminDashboard = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setNewTask({ ...newTask, [name]: value });
+    if (editingTask) {
+      setEditingTask({ ...editingTask, [name]: value });
+    } else {
+      setNewTask({ ...newTask, [name]: value });
+    }
   };
 
 
   const createTask = async () => {
     try {
       const token = localStorage.getItem("token"); // Get token from localStorage
-      console.log("name: " + newTask.name);
       const taskData = {
         name: newTask.name,          // Task name
         project: newTask.project,    // Project ID
@@ -217,18 +247,80 @@ const AdminDashboard = () => {
       );
 
       if (response.status === 201) {
-        // Update local state
         setTasks([...tasks, response.data.task]);
-
-        // Reset form
+        fetchProjects();
         setNewTask({ name: "", project: "", assignedTo: "", deadline: "", status: "" });
 
-        // Close modal
         setShowModal(false);
       }
     } catch (error) {
       console.error("Error creating task:", error);
       alert(error.response?.data?.message || "Failed to create task.");
+    }
+  };
+
+  const updateTask = async () => {
+    if (!editingTask || !editingTask._id) {
+      alert("No task selected for update");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.put(
+        `http://localhost:5000/api/tasks/${editingTask._id}`,
+        editingTask,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const updatedTask = response.data.task;
+      if (response.status === 200) {
+        setTasks(prevTasks =>
+          prevTasks.map(task =>
+            task._id === updatedTask._id ? updatedTask : task
+          )
+        );
+        fetchProjects();
+        setEditingTask(null);
+
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.error("Error updating task:", error);
+      alert(error.response?.data?.message || "Failed to update task.");
+    }
+  };
+
+  const deleteTask = async () => {
+    if (!taskToDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.delete(
+        `http://localhost:5000/api/tasks/${taskToDelete}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        setTasks(tasks.filter(task => task._id !== taskToDelete));
+        fetchProjects();
+        setTaskToDelete(null);
+
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert(error.response?.data?.message || "Failed to delete task.");
     }
   };
 
@@ -245,8 +337,9 @@ const AdminDashboard = () => {
   };
   const closeModal = () => {
     setShowModal(false);
-    // setEditingTask(null);
+    setEditingTask(null);
     setSelectedProject(null);
+    setTaskToDelete(null);
   };
 
   useEffect(() => {
@@ -255,6 +348,19 @@ const AdminDashboard = () => {
       setLoading(false);
     }, 500);
   }, [activeTab]);
+
+  const openEditTaskModal = (task) => {
+    setEditingTask(task);
+    setModalType('editTask');
+    setShowModal(true);
+  };
+
+  const openDeleteModal = (taskId) => {
+    setTaskToDelete(taskId.toString());
+    setModalType('deleteTask');
+    setShowModal(true);
+  };
+
 
   const renderDashboardContent = () => {
     if (loading) {
@@ -302,7 +408,7 @@ const AdminDashboard = () => {
                   <i className="fas fa-check-circle"></i>
                 </div>
                 <div className="stat-details">
-                  <h3>{tasks.filter(task => task.status === "completed").length}</h3>
+                  <h3>{completedTasks}</h3>
                   <p>Completed Tasks</p>
                 </div>
               </div>
@@ -345,42 +451,6 @@ const AdminDashboard = () => {
                     </div>
                   ))}
                 </div>
-
-                {/* {showModal && (
-                  <div className="modal">
-                    <div className="modal-content">
-                      <h3>Create New Project</h3>
-                      <input
-                        type="text"
-                        placeholder="Project Name"
-                        value={newProject.name}
-                        onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                      />
-                      <textarea
-                        placeholder="Project Description"
-                        value={newProject.description}
-                        onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                      />
-                      <label>Select Team Members:</label>
-                      <select
-                        multiple
-                        value={newProject.members}
-                        onChange={(e) =>
-                          setNewProject({
-                            ...newProject,
-                            members: Array.from(e.target.selectedOptions, (option) => option.value),
-                          })
-                        }
-                      >{teamMembers.map((member) => (
-                        <option key={member._id} value={member._id}>
-                          {member.firstName} {member.lastName}
-                        </option>
-                      ))}</select>
-                      <button onClick={handleCreateProject}>Create</button>
-                      <button onClick={() => setShowModal(false)}>Cancel</button>
-                    </div>
-                  </div>
-                )} */}
               </div>
 
               <div className="upcoming-tasks">
@@ -391,7 +461,7 @@ const AdminDashboard = () => {
                   </button>
                 </div>
                 <div className="task-list">
-                  {Array.isArray(tasks) && tasks.map(task => (
+                  {Array.isArray(tasks) && tasks.slice(0, 5).map(task => (
                     <div className="task-item" key={task.id}>
                       <div className="task-status">
                         <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
@@ -400,18 +470,18 @@ const AdminDashboard = () => {
                       </div>
                       <div className="task-info">
                         <h4>{task.name}</h4>
-                        <p>{task.project.name}</p>
+                        <p>{task.project?.name}</p>
                       </div>
 
                       <div className="task-deadline">
                         <i className="far fa-calendar-alt"></i>
-                        <span>{task.deadline}</span>
+                        <span>{new Date(task.deadline).toLocaleDateString()}</span>
                       </div>
                       <div className="task-actions">
-                        <button className="icon-button">
+                        <button className="icon-button" onClick={() => openEditTaskModal(task)}>
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button className="icon-button">
+                        <button className="icon-button" onClick={() => openDeleteModal(task._id)}>
                           <i className="fas fa-trash-alt"></i>
                         </button>
                       </div>
@@ -653,7 +723,6 @@ const AdminDashboard = () => {
             </div>
           </div>
         );
-        break;
       case 'projectDetails':
         if (!selectedProject) return null;
         return (
@@ -699,56 +768,156 @@ const AdminDashboard = () => {
             </div>
           </div>
         );
-        break;
-      // case 'task':
-      //   modalTitle = 'Assign New Task';
-      //   modalContent = (
-      //     <form className="modal-form">
-      //       <div className="form-group">
-      //         <label>Task Title</label>
-      //         <input type="text" placeholder="Enter task title" />
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Project</label>
-      //         <select>
-      //           <option value="">Select Project</option>
-      //           {projects.map(project => (
-      //             <option key={project.id} value={project.id}>{project.name}</option>
-      //           ))}
-      //         </select>
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Description</label>
-      //         <textarea placeholder="Enter task description"></textarea>
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Assign To</label>
-      //         <select>
-      //           <option value="">Select Team Member</option>
-      //           {teamMembers.map(member => (
-      //             <option key={member.id} value={member.id}>{member.name}</option>
-      //           ))}
-      //         </select>
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Priority</label>
-      //         <select>
-      //           <option value="low">Low</option>
-      //           <option value="medium">Medium</option>
-      //           <option value="high">High</option>
-      //         </select>
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Deadline</label>
-      //         <input type="date" />
-      //       </div>
-      //       <div className="form-buttons">
-      //         <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
-      //         <button type="submit" className="submit-button">Create Task</button>
-      //       </div>
-      //     </form>
-      //   );
-      //   break;
+      case 'task':
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h2>Create New Task</h2>
+                <button className="close-button" onClick={closeModal}>X</button>
+              </div>
+              <div className="modal-body">
+                <form className="modal-form">
+                  <div className="form-group">
+                    <label>Task Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter task name"
+                      value={newTask.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Project</label>
+                    <select name="project" value={newTask.project} onChange={handleInputChange}>
+                      <option value="">Select Project</option>
+                      {projects.map(proj => (
+                        <option key={proj._id} value={proj._id}>{proj.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Assign To</label>
+                    <select name="assignedTo" value={newTask.assignedTo} onChange={handleInputChange}>
+                      <option value="">Select Team Member</option>
+                      {teamMembers.map(member => (
+                        <option key={member.memberId?._id} value={member.memberId?._id}>
+                          {member.memberId?.firstName} {member.memberId?.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Deadline</label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={newTask.deadline}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-buttons">
+                    <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+                    <button type="button" className="submit-button" onClick={createTask}>Create Task</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        );
+      case 'editTask':
+        if (!editingTask) return null;
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h2>Edit Task</h2>
+                <button className="close-button" onClick={closeModal}>X</button>
+              </div>
+              <div className="modal-body">
+                <form className="modal-form">
+                  <div className="form-group">
+                    <label>Task Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter task name"
+                      value={editingTask.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Project</label>
+                    <select
+                      name="project"
+                      value={editingTask.project?._id || editingTask.project}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Project</option>
+                      {projects.map(proj => (
+                        <option key={proj._id} value={proj._id}>{proj.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Assign To</label>
+                    <select
+                      name="assignedTo"
+                      value={editingTask.assignedTo?._id || editingTask.assignedTo}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Team Member</option>
+                      {teamMembers.map(member => (
+                        <option key={member.memberId?._id} value={member.memberId?._id}>
+                          {member.memberId?.firstName} {member.memberId?.lastName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Deadline</label>
+                    <input
+                      type="date"
+                      name="deadline"
+                      value={editingTask.deadline ? new Date(editingTask.deadline).toISOString().split('T')[0] : ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select name="status" value={editingTask.status} onChange={handleInputChange}>
+                      <option value="pending">Pending</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                    </select>
+                  </div>
+                  <div className="form-buttons">
+                    <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+                    <button type="button" className="submit-button" onClick={updateTask}>Update Task</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        );
+      case 'deleteTask':
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h2>Confirm Deletion</h2>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this task? This action cannot be undone.</p>
+              </div>
+              <div className="form-buttons">
+                <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+                <button type="button" className="submit-button" onClick={deleteTask}>Confirm</button>
+              </div>
+            </div>
+          </div>
+        );
       // case 'member':
       //   modalTitle = 'Add Team Member';
       //   modalContent = (
@@ -833,14 +1002,13 @@ const AdminDashboard = () => {
             <input type="text" placeholder="Search..." />
           </div>
           <div className="header-right">
-            <div className="notifications">
-              <i className="far fa-bell"></i>
-              <span className="notification-badge">3</span>
-            </div>
+            <NotificationComponent pendingTasks={pendingTasks} />
             <div className="admin-profile">
-              <div className="admin-avatar">A</div>
+              <div className="admin-avatar">
+                {userProfile && `${userProfile.firstName?.charAt(0) || ''}${userProfile.lastName?.charAt(0) || 'U'}`}
+              </div>
               <div className="admin-info">
-                <h4>Admin User</h4>
+                <h4>{userProfile ? `${userProfile.firstName || ''} ${userProfile.lastName || ''}` : 'Employee User'}</h4>
                 <p></p>
               </div>
             </div>

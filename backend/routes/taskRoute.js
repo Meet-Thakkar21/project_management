@@ -9,7 +9,7 @@ const authMiddleware = require("../Middleware/authMiddleware");
 router.post("/:adminId", authMiddleware, async (req, res) => {
   try {
     const { name, project, assignedTo, deadline, status } = req.body;
-    const { adminId } = req.params;// Logged-in admin ID
+    const { adminId } = req.params;
     console.log(name,project,assignedTo,deadline,adminId);
     if (!name || !project || !assignedTo || !deadline) {
       return res.status(400).json({ message: "All fields are required!" });
@@ -62,7 +62,7 @@ router.get("/:id", authMiddleware, async (req, res) => {
 router.put("/:id", authMiddleware, async (req, res) => {
   try {
     const { name, project, assignedTo, deadline, status } = req.body;
-    const adminId = req.user.id;
+    const adminId = req.user.userId;
 
     const updatedTask = await Task.findOneAndUpdate(
       { _id: req.params.id, adminId },
@@ -82,7 +82,7 @@ router.put("/:id", authMiddleware, async (req, res) => {
 // DELETE A TASK (Only if created by the logged-in admin)
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
-    const adminId = req.user.id;
+    const adminId = req.user.userId;
     const deletedTask = await Task.findOneAndDelete({ _id: req.params.id, adminId });
 
     if (!deletedTask) return res.status(404).json({ message: "Task not found or unauthorized" });
