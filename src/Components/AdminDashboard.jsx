@@ -27,6 +27,30 @@ const AdminDashboard = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
 
+  /*Filter states*/
+  const [selectedFilterProject, setSelectedFilterProject] = useState("all");
+  const [selectedProjStatus, setSelectedProjStatus] = useState("all");
+
+  const projectNames = [...new Set(tasks.map(task => task.project?.name).filter(Boolean))];
+
+  // Function to filter tasks
+  const filteredTasks = tasks.filter(task => {
+    const matchesProject = selectedFilterProject === "all" || task.project?.name === selectedFilterProject;
+    const matchesStatus = selectedProjStatus === "all" || task.status === selectedProjStatus;
+    return matchesProject && matchesStatus;
+  });
+
+  const clearFilters = () => {
+    setSelectedFilterProject("all");
+    setSelectedProjStatus("all");
+
+    // Force a UI re-render by setting a temporary state
+    setTimeout(() => {
+      setSelectedProject("all");
+    }, 10);
+  };
+
+  /*Fetching Data*/
   const fetchProjects = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -192,7 +216,6 @@ const AdminDashboard = () => {
       fetchTasks();
     }
   }, [adminId]);
-
 
 
   const addMember = async () => {
@@ -599,7 +622,26 @@ const AdminDashboard = () => {
           <div className="tasks-container">
             <div className="section-header">
               <h2>Tasks Management</h2>
-              <button className="action-button" onClick={() => setShowModal(true)}>
+              {/* Task Filters */}
+              <div className="filters">
+                {/* Filter by Project */}
+                <select className="filter-dropdown" value={selectedProject} onChange={(e) => setSelectedFilterProject(e.target.value)}>
+                  <option value="all">All Projects</option>
+                  {projectNames.map((project, index) => (
+                    <option key={index} value={project}>{project}</option>
+                  ))}
+                </select>
+
+                {/* Filter by Status */}
+                <button className={`filter-btn ${selectedProjStatus === "all" ? "active" : ""}`} onClick={() => setSelectedProjStatus("all")}>All</button>
+                <button className={`filter-btn ${selectedProjStatus === "pending" ? "active" : ""}`} onClick={() => setSelectedProjStatus("pending")}>Pending</button>
+                <button className={`filter-btn ${selectedProjStatus === "in_progress" ? "active" : ""}`} onClick={() => setSelectedProjStatus("in_progress")}>In Progress</button>
+                <button className={`filter-btn ${selectedProjStatus === "completed" ? "active" : ""}`} onClick={() => setSelectedProjStatus("completed")}>Completed</button>
+
+                {/* Clear Filters */}
+                <button className="clear-filters" onClick={clearFilters}>Clear Filters</button>
+              </div>
+              <button className="action-button" onClick={() => openModal('task')}>
                 <i className="fas fa-plus"></i> Create Task
               </button>
             </div>
@@ -616,47 +658,33 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {Array.isArray(tasks) && tasks.map(task => (
-                  <tr key={task._id}>
-                    <td>{task.name}</td>
-                    <td>{task.project.name || "N/A"}</td>
-                    <td>{task.assignedTo?.email || "Unassigned"}</td>
-                    <td>{new Date(task.deadline).toLocaleDateString()}</td>
-                    <td>{task.status}</td>
-                    <td>
-                      <button className="icon-button"><i className="fas fa-edit"></i></button>
-                      <button className="icon-button"><i className="fas fa-trash-alt"></i></button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredTasks.length > 0 ? (
+                  filteredTasks.map(task => (
+                    <tr key={task._id}>
+                      <td>{task.name}</td>
+                      <td>{task.project.name || "N/A"}</td>
+                      <td>{task.assignedTo?.email || "Unassigned"}</td>
+                      <td>{new Date(task.deadline).toLocaleDateString()}</td>
+                      <td className="task-status">
+                        <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
+                          {task.status}
+                        </span>
+                      </td>
+                      <td>
+                        <button className="icon-button" onClick={() => openEditTaskModal(task)}>
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button className="icon-button" onClick={() => openDeleteModal(task._id)}>
+                          <i className="fas fa-trash-alt"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan="6" className="no-data">No tasks match the selected filters</td></tr>
+                )}
               </tbody>
             </table>
-
-            {showModal && (
-              <div className="modal">
-                <div className="modal-content">
-                  <h3>Create Task</h3>
-                  <input type="text" name="name" placeholder="Task Name" onChange={handleInputChange} />
-                  <select name="project" onChange={handleInputChange}>
-                    <option value="">Select Project</option>
-                    {projects.map(proj => (
-                      <option key={proj._id} value={proj._id}>{proj.name}</option>
-                    ))}
-                  </select>
-                  <select name="assignedTo" onChange={handleInputChange}>
-                    <option value="">Assign To</option>
-                    {teamMembers.map(member => (
-                      <option key={member.memberId._id} value={member.memberId._id}>
-                        {member.memberId.email}
-                      </option>
-                    ))}
-                  </select>
-                  <input type="date" name="deadline" onChange={handleInputChange} />
-                  <button onClick={createTask}>Create</button>
-                  <button onClick={() => setShowModal(false)}>Cancel</button>
-                </div>
-              </div>
-            )}
           </div>
         );
 
