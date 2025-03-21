@@ -8,9 +8,17 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Home from './Components/Home';
 import AdminDashboard from './Components/AdminDashboard';
 import EmployeeDashboard from './Components/EmployeeDashboard';
+import ChatApp from './Components/Chat';
 
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
-function App() {
+/*************  ✨ Codeium Command ⭐  *************/
+/**
+ * The main app component, which sets up the Google OAuth provider
+ * and the main routes to the different pages in the app.
+ *
+ * @returns {JSX.Element} The JSX element representing the App component.
+ */
+/******  30efa471-17f1-4ca2-b21f-e310f313eb6d  *******/function App() {
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <Router>
@@ -20,6 +28,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
+          <Route path='/chat' element={<ChatApp />} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>
