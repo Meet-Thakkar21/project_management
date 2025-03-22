@@ -26,7 +26,7 @@ const AdminDashboard = () => {
   });
   const [editingTask, setEditingTask] = useState(null);
   const [taskToDelete, setTaskToDelete] = useState(null);
-
+  const [projectToDelete, setProjectToDelete] = useState(null);
   /*Filter states*/
   const [selectedFilterProject, setSelectedFilterProject] = useState("all");
   const [selectedProjStatus, setSelectedProjStatus] = useState("all");
@@ -347,6 +347,33 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteProject = async () => {
+    if (!projectToDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.delete(
+        `http://localhost:5000/api/projects/${projectToDelete}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        fetchProjects();
+        setProjectToDelete(null);
+
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      alert(error.response?.data?.message || "Failed to delete task.");
+    }
+  };
+
   // Modal Handling Code
   const openProjectDetailsModal = (project) => {
     setSelectedProject(project);
@@ -363,6 +390,7 @@ const AdminDashboard = () => {
     setEditingTask(null);
     setSelectedProject(null);
     setTaskToDelete(null);
+    setProjectToDelete(null);
   };
 
   useEffect(() => {
@@ -378,12 +406,17 @@ const AdminDashboard = () => {
     setShowModal(true);
   };
 
-  const openDeleteModal = (taskId) => {
+  const openDeleteTaskModal = (taskId) => {
     setTaskToDelete(taskId.toString());
     setModalType('deleteTask');
     setShowModal(true);
   };
 
+  const openDeleteProjectModal = (projectId) => {
+    setProjectToDelete(projectId.toString());
+    setModalType('deleteProject');
+    setShowModal(true);
+  };
 
   const renderDashboardContent = () => {
     if (loading) {
@@ -504,7 +537,7 @@ const AdminDashboard = () => {
                         <button className="icon-button" onClick={() => openEditTaskModal(task)}>
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button className="icon-button" onClick={() => openDeleteModal(task._id)}>
+                        <button className="icon-button" onClick={() => openDeleteTaskModal(task._id)}>
                           <i className="fas fa-trash-alt"></i>
                         </button>
                       </div>
@@ -538,7 +571,7 @@ const AdminDashboard = () => {
                 {projects.map(project => (
                   <tr key={project.id}>
                     <td>{project.name}</td>
-                    {/* <td>{project.members}</td> */}
+                    <td>{project.members?.length || 0}</td>
                     <td>{project.completed}/{project.tasks}</td>
                     <td>
                       <div className="table-progress-bar">
@@ -548,13 +581,13 @@ const AdminDashboard = () => {
                     </td>
                     <td>
                       <div className="table-actions">
-                        <button className="icon-button">
+                        <button className="icon-button" onClick={() => openProjectDetailsModal(project)}>
                           <i className="fas fa-eye"></i>
                         </button>
                         <button className="icon-button">
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button className="icon-button">
+                        <button className="icon-button" onClick={() => openDeleteProjectModal(project._id)}>
                           <i className="fas fa-trash-alt"></i>
                         </button>
                       </div>
@@ -674,7 +707,7 @@ const AdminDashboard = () => {
                         <button className="icon-button" onClick={() => openEditTaskModal(task)}>
                           <i className="fas fa-edit"></i>
                         </button>
-                        <button className="icon-button" onClick={() => openDeleteModal(task._id)}>
+                        <button className="icon-button" onClick={() => openDeleteTaskModal(task._id)}>
                           <i className="fas fa-trash-alt"></i>
                         </button>
                       </td>
@@ -942,6 +975,23 @@ const AdminDashboard = () => {
               <div className="form-buttons">
                 <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
                 <button type="button" className="submit-button" onClick={deleteTask}>Confirm</button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'deleteProject':
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h2>Confirm Deletion</h2>
+              </div>
+              <div className="modal-body">
+                <p>Are you sure you want to delete this Project? This action cannot be undone.</p>
+              </div>
+              <div className="form-buttons">
+                <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+                <button type="button" className="submit-button" onClick={deleteProject}>Confirm</button>
               </div>
             </div>
           </div>
