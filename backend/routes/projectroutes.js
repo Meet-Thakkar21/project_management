@@ -71,7 +71,7 @@ router.get("/", async (req, res) => {
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const adminId = req.user.userId;
-    const deletedProject = await Project.findOneAndDelete({ _id: req.params.id, adminId });
+    const deletedProject = await Project.findOneAndDelete({ _id: req.params.id, createdBy: adminId });
 
     if (!deletedProject) return res.status(404).json({ message: "Project not found or unauthorized" });
 

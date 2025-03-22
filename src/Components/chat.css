@@ -1,4 +1,4 @@
-/* Base styles */
+Base styles
 * {
   box-sizing: border-box;
   margin: 0;
@@ -20,6 +20,7 @@ body {
 }
 
 /* Sidebar styles */
+/*
 .sidebar {
   width: 260px;
   height: 100%;
@@ -154,7 +155,7 @@ body {
   background-color: #f5f5f5;
 }
 
-/* Chat container styles */
+/* Chat container styles 
 .chat-container {
   flex: 1;
   display: flex;
@@ -212,7 +213,7 @@ body {
   background-color: #f5f5f5;
 }
 
-/* Messages container */
+/* Messages container   
 .messages-container {
   flex: 1;
   overflow-y: auto;
@@ -271,7 +272,7 @@ body {
   line-height: 1.4;
 }
 
-/* Chat footer */
+/* Chat footer 
 .chat-footer {
   padding: 16px;
   border-top: 1px solid #e0e0e0;
@@ -320,7 +321,7 @@ body {
   background-color: #1e3a8a;
 }
 
-/* Modal styles */
+/* Modal styles 
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -449,7 +450,7 @@ body {
   background-color: #1e3a8a;
 }
 
-/* Utility classes */
+/* Utility classes 
 .icon-button {
   background: none;
   border: none;
