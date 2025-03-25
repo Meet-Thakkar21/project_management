@@ -10,7 +10,7 @@ router.get('/:adminId/members', async (req, res) => {
   try {
     const { adminId } = req.params;
 
-    const team = await Team.findOne({ adminId }).populate('members.memberId', 'firstName lastName email');
+    const team = await Team.findOne({ adminId }).populate('members.memberId', 'firstName lastName email role dob gender skills');
 
     if (!team) return res.status(404).json({ message: 'No team found for this admin' });
 
@@ -25,7 +25,7 @@ router.get('/:adminId/members', async (req, res) => {
 router.post('/:adminId/add-member', async (req, res) => {
   try {
     const { adminId } = req.params;
-    const { email, role } = req.body; // Role will be provided by the admin
+    const { email, role, status } = req.body; // Role will be provided by the admin
 
     // Find the employee by email
     const member = await User.findOne({ email });
@@ -41,14 +41,25 @@ router.post('/:adminId/add-member', async (req, res) => {
 
     // Check if the member is already in the team
     if (team.members.some(m => m.memberId.toString() === member._id.toString())) {
-      return res.status(400).json({ message: 'Member already in team' });
+      return res.status(400).json({ message: 'Member already in team !!' });
     }
 
     // Add the new member with role
-    team.members.push({ memberId: member._id, role });
+    team.members.push({ memberId: member._id, role, status });
     await team.save();
+    await team.populate('members.memberId', 'firstName lastName email');
 
-    res.status(200).json({ message: 'Member added successfully', member: { _id: member._id, email, role } });
+    const newMember = team.members.find(m => m.memberId._id.toString() === member._id.toString());
+    res.status(200).json({
+      message: 'Member added successfully', member: {
+        _id: newMember.memberId._id,
+        firstName: newMember.memberId.firstName,
+        lastName: newMember.memberId.lastName,
+        email: newMember.memberId.email,
+        role: newMember.role,
+        status: newMember.status
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error adding member', error });
@@ -100,7 +111,7 @@ router.get('/user-teams', authMiddleware, async (req, res) => {
         members: { $in: [team.adminId] }
       });
 
-      // Get admin details
+      // Get admin details  
       const admin = await User.findById(team.adminId, 'firstName lastName');
 
       // Count members

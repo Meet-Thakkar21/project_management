@@ -71,9 +71,17 @@ router.get("/", async (req, res) => {
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {
     const adminId = req.user.userId;
-    const deletedProject = await Project.findOneAndDelete({ _id: req.params.id, createdBy: adminId });
+    const project = await Project.findOne({ _id: req.params.id, createdBy: adminId });
+    if (!project) {
+      return res.status(404).json({ message: "Project not found or unauthorized" });
+    }
 
-    if (!deletedProject) return res.status(404).json({ message: "Project not found or unauthorized" });
+    // Delete all tasks associated with the project
+    await Task.deleteMany({ project: project._id });
+
+    // Now delete the project
+    await Project.findByIdAndDelete(project._id);
+    if (!project) return res.status(404).json({ message: "Project not found or unauthorized" });
 
     res.status(200).json({ message: "Project deleted successfully" });
   } catch (error) {

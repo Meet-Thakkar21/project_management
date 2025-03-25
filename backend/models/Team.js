@@ -5,7 +5,8 @@ const teamSchema = new mongoose.Schema({
   members: [
     {
       memberId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Employee ID
-      role: { type: String, required: true } // Role assigned by admin
+      role: { type: String, required: true }, // Role assigned by admin
+      status: { type: String, required: true, enum: ["Activate", "Deactivate"], default: "Activate"} //Status
     }
   ]
 });

@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const [adminId, setadminId] = useState('');
   const [tasks, setTasks] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
+  const [expandedMemberId, setExpandedMemberId] = useState(null);
   const [newTask, setNewTask] = useState({
     name: "",
     project: "",     // Project ID (from dropdown)
@@ -217,21 +218,33 @@ const AdminDashboard = () => {
     }
   }, [adminId]);
 
-
+  // Add member
   const addMember = async () => {
     try {
-      const response = await axios.post(`http://localhost:5000/api/teams/${adminId}/add-member`, { email, role });
+      var status = "Activate";
+      const response = await axios.post(`http://localhost:5000/api/teams/${adminId}/add-member`, { email, role, status });
 
-      const newMember = {
-        _id: response.data.member._id, // Member ID
-        email: response.data.member.email, // Member Email
-        role: response.data.member.role // Role assigned by admin
-      };
+      if (response.status === 200) {
+        const newMember = {
+          _id: response.data.member._id, // Member ID
+          firstName: response.data.member.firstName,
+          lastName: response.data.member.lastName,
+          email: response.data.member.email,
+          role: response.data.member.role,
+          status: response.data.member.status
+        };
+        const memberExists = teamMembers.some(member =>
+          member.memberId?._id === newMember.memberId._id
+        );
 
-      setTeamMembers([...teamMembers, newMember]); // Update UI with new member
-      setShowModal(false);
-      setEmail('');
-      setRole('');
+        if (!memberExists) {
+          setTeamMembers([...teamMembers, newMember]);
+        }
+        setShowModal(false);
+
+        setEmail('');
+        setRole('');
+      }
     } catch (error) {
       alert(error.response?.data?.message || 'Error adding member');
     }
@@ -246,6 +259,9 @@ const AdminDashboard = () => {
     }
   };
 
+  const toggleMemberDetails = (memberId) => {
+    setExpandedMemberId(prevId => prevId === memberId ? null : memberId);
+  };
 
   const createTask = async () => {
     try {
@@ -603,7 +619,7 @@ const AdminDashboard = () => {
           <div className="members-container">
             <div className="section-header">
               <h2>Team Members</h2>
-              <button className="action-button" onClick={() => setShowModal(true)}>
+              <button className="action-button" onClick={() => openModal('member')}>
                 <i className="fas fa-plus"></i> Add Member
               </button>
             </div>
@@ -613,42 +629,84 @@ const AdminDashboard = () => {
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Role</th>
                   <th>Email</th>
-                  <th>Actions</th>
+                  <th>Status</th>
+                  <th>Detail</th>
                 </tr>
               </thead>
               <tbody>
                 {teamMembers.map((member) => (
-                  <tr key={member._id}>
-                    <td>{member.memberId?.firstName} {member.memberId?.lastName}</td>
-                    <td>{member.role}</td>
-                    <td>{member.memberId?.email}</td>
-                    <td>
-                      <button className="icon-button">
-                        <i className="fas fa-trash-alt"></i>
-                      </button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={member._id || member.memberId?._id}>
+                    <tr>
+                      <td>{member.memberId?.firstName} {member.memberId?.lastName}</td>
+                      <td>{member.memberId?.email}</td>
+                      <td>{member.status}</td>
+                      <td>
+                        <button
+                          className="icon-button"
+                          onClick={() => toggleMemberDetails(member._id || member.memberId?._id)}
+                        >
+                          <i className={`fas ${expandedMemberId === (member._id || member.memberId?._id) ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                        </button>
+                      </td>
+                    </tr>
+                    {expandedMemberId === (member._id || member.memberId?._id) && (
+                      <tr className="member-details-row">
+                        <td colSpan="5">
+                          <div className="member-details-container">
+                            <div className="member-details-layout">
+                              {/* Left Side - Profile Photo and Skills */}
+                              <div className="member-details-left">
+                                <div className="member-profile-photo">
+                                  {member.memberId?.firstName && member.memberId?.lastName
+                                    ? `${member.memberId.firstName[0].toUpperCase()}${member.memberId.lastName[0].toUpperCase()}`
+                                    : 'UN'}
+                                </div>
+                                <div className="member-skills-box">
+                                  <strong>Skills:</strong>
+                                  <p>
+                                    {member.memberId?.skills && member.memberId.skills.length > 0
+                                      ? member.memberId.skills.join(', ')
+                                      : 'No skills specified'}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Right Side - Personal Details Grid */}
+                              <div className="member-details-right">
+                                <div className="details-grid">
+                                  <div className="detail-box">
+                                    <strong>Name</strong>
+                                    <p>{member.memberId?.firstName} {member.memberId?.lastName}</p>
+                                  </div>
+                                  <div className="detail-box">
+                                    <strong>DOB</strong>
+                                    <p>
+                                      {member.memberId?.dob
+                                        ? new Date(member.memberId.dob).toLocaleDateString()
+                                        : 'Not specified'}
+                                    </p>
+                                  </div>
+                                  <div className="detail-box">
+                                    <strong>Gender</strong>
+                                    <p>{member.memberId?.gender || 'Not specified'}</p>
+                                  </div>
+                                  <div className="detail-box">
+                                    <strong>Email</strong>
+                                    <p>{member.memberId?.email}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
-
-            {/* Add Member Modal */}
-            {showModal && (
-              <div className="modal">
-                <div className="modal-content">
-                  <h3>Add Member</h3>
-                  <label>Email</label>
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  <label>Role</label>
-                  <input type="text" value={role} onChange={(e) => setRole(e.target.value)} />
-                  <button onClick={addMember}>Add Member</button>
-                  <button onClick={() => setShowModal(false)}>Cancel</button>
-                </div>
-              </div>
-            )}
-          </div>
+          </div >
         );
       case 'tasks':
         return (
@@ -696,7 +754,7 @@ const AdminDashboard = () => {
                     <tr key={task._id}>
                       <td>{task.name}</td>
                       <td>{task.project.name || "N/A"}</td>
-                      <td>{task.assignedTo?.email || "Unassigned"}</td>
+                      <td>{task.assignedTo?.firstName} {task.assignedTo?.lastName}</td>
                       <td>{new Date(task.deadline).toLocaleDateString()}</td>
                       <td className="task-status">
                         <span className={`status-badge ${task.status.toLowerCase().replace(' ', '-')}`}>
@@ -987,7 +1045,7 @@ const AdminDashboard = () => {
                 <h2>Confirm Deletion</h2>
               </div>
               <div className="modal-body">
-                <p>Are you sure you want to delete this Project? This action cannot be undone.</p>
+                <p>Are you sure you want to delete this Project? This action cannot be undone and leads to remove all things related to this project.</p>
               </div>
               <div className="form-buttons">
                 <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
@@ -996,47 +1054,43 @@ const AdminDashboard = () => {
             </div>
           </div>
         );
-      // case 'member':
-      //   modalTitle = 'Add Team Member';
-      //   modalContent = (
-      //     <form className="modal-form">
-      //       <div className="form-group">
-      //         <label>Full Name</label>
-      //         <input type="text" placeholder="Enter full name" />
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Email</label>
-      //         <input type="email" placeholder="Enter email address" />
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Role</label>
-      //         <input type="text" placeholder="Enter job role" />
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Department</label>
-      //         <select>
-      //           <option value="">Select Department</option>
-      //           <option value="development">Development</option>
-      //           <option value="design">Design</option>
-      //           <option value="marketing">Marketing</option>
-      //           <option value="management">Management</option>
-      //         </select>
-      //       </div>
-      //       <div className="form-group">
-      //         <label>Assign to Projects</label>
-      //         <select multiple>
-      //           {projects.map(project => (
-      //             <option key={project.id} value={project.id}>{project.name}</option>
-      //           ))}
-      //         </select>
-      //       </div>
-      //       <div className="form-buttons">
-      //         <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
-      //         <button type="submit" className="submit-button">Add Member</button>
-      //       </div>
-      //     </form>
-      //   );
-      //   break;
+      case 'member':
+        return (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h2>Add Team Member</h2>
+                <button className="close-button" onClick={closeModal}>X</button>
+              </div>
+              <div className="modal-body">
+                <form className="modal-form">
+                  <div className="form-group">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      placeholder="Enter email address"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Role</label>
+                    <input
+                      type="text"
+                      placeholder="Enter role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-buttons">
+                    <button type="button" className="cancel-button" onClick={closeModal}>Cancel</button>
+                    <button type="button" className="submit-button" onClick={addMember}>Add Member</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        );
       default:
         return null;
     }

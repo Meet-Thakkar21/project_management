@@ -156,13 +156,13 @@ function ChatApp() {
             <i className="icon-plus">+</i>
           </button>
         </div>
-        
+
         <div className="sidebar-content">
           <div className="channel-group">
             <ul className="channel-list">
               {channels.map(channel => (
-                <li 
-                  key={channel.id} 
+                <li
+                  key={channel.id}
                   className={`channel-item ${selectedChannel.id === channel.id ? 'active' : ''}`}
                   onClick={() => setSelectedChannel(channel)}
                 >
@@ -177,11 +177,11 @@ function ChatApp() {
               ))}
             </ul>
           </div>
-          
+
           <div className="member-group">
             <h3>Members</h3>
             <div className="member-dropdown">
-              <button 
+              <button
                 className="member-dropdown-button"
                 onClick={() => setIsMembersDropdownOpen(!isMembersDropdownOpen)}
               >
@@ -189,7 +189,7 @@ function ChatApp() {
                 <span>Select Member</span>
                 <i className="icon-chevron-down">▼</i>
               </button>
-              
+
               {isMembersDropdownOpen && (
                 <div className="dropdown-content">
                   {allMembers.map(member => (
@@ -219,14 +219,14 @@ function ChatApp() {
               <i className="icon-users">👥</i>
             </button>
             <div className="members-dropdown">
-              <button 
+              <button
                 className="members-dropdown-button"
                 onClick={() => setIsChannelMembersOpen(!isChannelMembersOpen)}
               >
                 <span>{selectedChannel.members.length} members</span>
                 <i className="icon-chevron-down">▼</i>
               </button>
-              
+
               {isChannelMembersOpen && (
                 <div className="dropdown-content">
                   {selectedChannel.members.map((member, index) => (
@@ -244,8 +244,8 @@ function ChatApp() {
         <div className="messages-container">
           <div className="messages">
             {messages[selectedChannel.id]?.map((message) => (
-              <div 
-                key={message.id} 
+              <div
+                key={message.id}
                 className={`message ${message.isSelf ? 'message-self' : 'message-other'}`}
               >
                 <div className="message-content">
@@ -291,11 +291,11 @@ function ChatApp() {
             <div className="modal-content">
               <div className="form-group">
                 <label htmlFor="channel-name">Channel Name</label>
-                <input 
-                  id="channel-name" 
+                <input
+                  id="channel-name"
                   type="text"
-                  value={newChannelName} 
-                  onChange={(e) => setNewChannelName(e.target.value)} 
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
                   placeholder="Enter channel name"
                 />
               </div>
@@ -303,8 +303,8 @@ function ChatApp() {
                 <label>Select Members</label>
                 <div className="member-grid">
                   {allMembers.map(member => (
-                    <div 
-                      key={member.id} 
+                    <div
+                      key={member.id}
                       className={`member-item ${selectedMembers.includes(member.name) ? 'selected' : ''}`}
                       onClick={() => toggleMemberSelection(member.name)}
                     >

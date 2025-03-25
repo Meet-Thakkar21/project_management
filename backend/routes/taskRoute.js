@@ -10,7 +10,7 @@ router.post("/:adminId", authMiddleware, async (req, res) => {
   try {
     const { name, project, assignedTo, deadline, status } = req.body;
     const { adminId } = req.params;
-    console.log(name,project,assignedTo,deadline,adminId);
+    console.log(name, project, assignedTo, deadline, adminId);
     if (!name || !project || !assignedTo || !deadline) {
       return res.status(400).json({ message: "All fields are required!" });
     }
@@ -20,6 +20,20 @@ router.post("/:adminId", authMiddleware, async (req, res) => {
 
     if (!projectExists) return res.status(404).json({ message: "Project not found" });
     if (!userExists) return res.status(404).json({ message: "Assigned user not found" });
+
+    const isMember = await Project.exists({
+      _id: project,
+      members: assignedTo
+    });
+
+    console.log(`Is member part of project? ${Boolean(isMember)}`);
+    if (!isMember) {
+      await Project.findByIdAndUpdate(
+        project,
+        { $push: { members: assignedTo } },
+        { new: true }
+      );
+    }
 
     const newTask = new Task({ name, project, assignedTo, deadline, status, adminId });
     await newTask.save();
@@ -35,7 +49,7 @@ router.post("/:adminId", authMiddleware, async (req, res) => {
 router.get("/:adminId", async (req, res) => {
   try {
     const { adminId } = req.params;
-    const tasks = await Task.find({ adminId }).populate("project assignedTo", "name email");
+    const tasks = await Task.find({ adminId }).populate("project assignedTo", "name firstName lastName email");
     res.status(200).json(tasks);
   } catch (error) {
     console.error("Error fetching tasks:", error);
@@ -47,7 +61,7 @@ router.get("/:adminId", async (req, res) => {
 router.get("/:id", authMiddleware, async (req, res) => {
   try {
     const adminId = req.user.id;
-    const task = await Task.findOne({ _id: req.params.id, adminId }).populate("project assignedTo", "name email");
+    const task = await Task.findOne({ _id: req.params.id, adminId }).populate("project assignedTo", "name firstName lastName email");
 
     if (!task) return res.status(404).json({ message: "Task not found" });
 
@@ -64,6 +78,20 @@ router.put("/:id", authMiddleware, async (req, res) => {
     const { name, project, assignedTo, deadline, status } = req.body;
     const adminId = req.user.userId;
 
+    const isMember = await Project.exists({
+      _id: project,
+      members: assignedTo
+    });
+
+    console.log(`Is member part of project? ${Boolean(isMember)}`);
+    if (!isMember) {
+      await Project.findByIdAndUpdate(
+        project,
+        { $push: { members: assignedTo } },
+        { new: true }
+      );
+    }
+    
     const updatedTask = await Task.findOneAndUpdate(
       { _id: req.params.id, adminId },
       { name, project, assignedTo, deadline, status },

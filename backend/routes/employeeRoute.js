@@ -156,6 +156,24 @@ router.get('/profile', authMiddleware, async (req, res) => {
     }
 });
 
+//Get member profile
+router.get('/memberprofile/:memberId', async (req, res) => {
+    try {
+        const {memberId} = req.params;
+        
+        const user = await User.findById(memberId).select('-password');
+
+        if (!user) {
+            return res.status(404).json({ message: 'Member not found' });
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Error fetching member profile:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 //Update user profile
 router.put('/profile', authMiddleware, async (req, res) => {
     try {
