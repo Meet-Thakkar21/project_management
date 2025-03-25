@@ -217,4 +217,27 @@ router.get('/details/:teamId', authMiddleware, async (req, res) => {
   }
 });
 
+// Update member status in team under admin
+router.put('/update-status/:memberId', authMiddleware, async (req, res) => {
+  try {
+    const { memberId } = req.params;
+    const { status } = req.body;
+    const adminId = req.user.userId;
+    // Find team containing the member
+    const team = await Team.findOne({ adminId: adminId });
+    if (!team) return res.status(404).json({ message: "Team not found" });
+
+    // Update status
+    const memberIndex = team.members.findIndex(m => m.memberId.toString() === memberId);
+    if (memberIndex === -1) return res.status(404).json({ message: "Member not found in your team." });
+    team.members[memberIndex].status = status;
+    await team.save();
+    
+    res.status(200).json({ message: "Member status updated successfully" });
+  } catch (error) {
+    console.error("Error updating member status:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

@@ -16,6 +16,7 @@ const AdminDashboard = () => {
   const [role, setRole] = useState('');
   const [adminId, setadminId] = useState('');
   const [tasks, setTasks] = useState([]);
+  const [loadingStatus, setLoadingStatus] = useState({});
   const [selectedProject, setSelectedProject] = useState(null);
   const [expandedMemberId, setExpandedMemberId] = useState(null);
   const [newTask, setNewTask] = useState({
@@ -390,6 +391,46 @@ const AdminDashboard = () => {
     }
   };
 
+  //Toggle Member Status
+  const toggleMemberStatus = async (memberId, currentStatus) => {
+    if (loadingStatus[memberId]) return;
+
+    const updatedLoadingStatus = { ...loadingStatus, [memberId]: true };
+    setLoadingStatus(updatedLoadingStatus);
+
+    try {
+      const token = localStorage.getItem("token");
+      const newStatus = currentStatus === "Activate" ? "Deactivate" : "Activate"; // Toggle status
+
+      await axios.put(`http://localhost:5000/api/teams/update-status/${memberId}`,
+        { status: newStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Update UI instantly
+      setTeamMembers(prevMembers =>
+        prevMembers.map(member =>
+          member.memberId._id === memberId ? { ...member, status: newStatus } : member
+        )
+      );
+    } catch (error) {
+      console.error("Error updating status:", error);
+      setLoadingStatus(prev => {
+        const newLoadingStatus = { ...prev };
+        delete newLoadingStatus[memberId];
+        return newLoadingStatus;
+      });
+      alert("Failed to update member status.");
+
+    } finally {
+      setLoadingStatus(prev => {
+        const newLoadingStatus = { ...prev };
+        delete newLoadingStatus[memberId];
+        return newLoadingStatus;
+      });
+    }
+  };
+
   // Modal Handling Code
   const openProjectDetailsModal = (project) => {
     setSelectedProject(project);
@@ -631,79 +672,100 @@ const AdminDashboard = () => {
                   <th>Name</th>
                   <th>Email</th>
                   <th>Status</th>
+                  <th>Change Status</th>
                   <th>Detail</th>
                 </tr>
               </thead>
               <tbody>
-                {teamMembers.map((member) => (
-                  <React.Fragment key={member._id || member.memberId?._id}>
-                    <tr>
-                      <td>{member.memberId?.firstName} {member.memberId?.lastName}</td>
-                      <td>{member.memberId?.email}</td>
-                      <td>{member.status}</td>
-                      <td>
-                        <button
-                          className="icon-button"
-                          onClick={() => toggleMemberDetails(member._id || member.memberId?._id)}
-                        >
-                          <i className={`fas ${expandedMemberId === (member._id || member.memberId?._id) ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedMemberId === (member._id || member.memberId?._id) && (
-                      <tr className="member-details-row">
-                        <td colSpan="5">
-                          <div className="member-details-container">
-                            <div className="member-details-layout">
-                              {/* Left Side - Profile Photo and Skills */}
-                              <div className="member-details-left">
-                                <div className="member-profile-photo">
-                                  {member.memberId?.firstName && member.memberId?.lastName
-                                    ? `${member.memberId.firstName[0].toUpperCase()}${member.memberId.lastName[0].toUpperCase()}`
-                                    : 'UN'}
-                                </div>
-                                <div className="member-skills-box">
-                                  <strong>Skills:</strong>
-                                  <p>
-                                    {member.memberId?.skills && member.memberId.skills.length > 0
-                                      ? member.memberId.skills.join(', ')
-                                      : 'No skills specified'}
-                                  </p>
-                                </div>
-                              </div>
+                {teamMembers.map((member) => {
+                  const memberId = member.memberId?._id;
+                  const isLoading = loadingStatus[memberId];
 
-                              {/* Right Side - Personal Details Grid */}
-                              <div className="member-details-right">
-                                <div className="details-grid">
-                                  <div className="detail-box">
-                                    <strong>Name</strong>
-                                    <p>{member.memberId?.firstName} {member.memberId?.lastName}</p>
+                  return (
+                    <React.Fragment key={memberId}>
+                      <tr>
+                        <td>{member.memberId?.firstName} {member.memberId?.lastName}</td>
+                        <td>{member.memberId?.email}</td>
+                        <td>{member.status}</td>
+                        <td>
+                          <button
+                            className="status-toggle-button"
+                            onClick={() => toggleMemberStatus(memberId, member.status)}
+                            disabled={isLoading}
+                          >
+                            {isLoading ? (
+                              <span className="loading-indicator">
+                                Loading...
+                              </span>
+                            ) : (
+                              member.status === "Activate" ? "Deactivate" : "Activate"
+                            )}
+                          </button>
+                        </td>
+                        <td>
+                          <button
+                            className="icon-button"
+                            onClick={() => toggleMemberDetails(memberId)}
+                          >
+                            <i className={`fas ${expandedMemberId === memberId ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedMemberId === memberId && (
+                        <tr className="member-details-row">
+                          <td colSpan="5">
+                            <div className="member-details-container">
+                              <div className="member-details-layout">
+                                {/* Left Side - Profile Photo and Skills */}
+                                <div className="member-details-left">
+                                  <div className="member-profile-photo">
+                                    {member.memberId?.firstName && member.memberId?.lastName
+                                      ? `${member.memberId.firstName[0].toUpperCase()}${member.memberId.lastName[0].toUpperCase()}`
+                                      : 'UN'}
                                   </div>
-                                  <div className="detail-box">
-                                    <strong>DOB</strong>
+                                  <div className="member-skills-box">
+                                    <strong>Skills:</strong>
                                     <p>
-                                      {member.memberId?.dob
-                                        ? new Date(member.memberId.dob).toLocaleDateString()
-                                        : 'Not specified'}
+                                      {member.memberId?.skills && member.memberId.skills.length > 0
+                                        ? member.memberId.skills.join(', ')
+                                        : 'No skills specified'}
                                     </p>
                                   </div>
-                                  <div className="detail-box">
-                                    <strong>Gender</strong>
-                                    <p>{member.memberId?.gender || 'Not specified'}</p>
-                                  </div>
-                                  <div className="detail-box">
-                                    <strong>Email</strong>
-                                    <p>{member.memberId?.email}</p>
+                                </div>
+
+                                {/* Right Side - Personal Details Grid */}
+                                <div className="member-details-right">
+                                  <div className="details-grid">
+                                    <div className="detail-box">
+                                      <strong>Name</strong>
+                                      <p>{member.memberId?.firstName} {member.memberId?.lastName}</p>
+                                    </div>
+                                    <div className="detail-box">
+                                      <strong>DOB</strong>
+                                      <p>
+                                        {member.memberId?.dob
+                                          ? new Date(member.memberId.dob).toLocaleDateString()
+                                          : 'Not specified'}
+                                      </p>
+                                    </div>
+                                    <div className="detail-box">
+                                      <strong>Gender</strong>
+                                      <p>{member.memberId?.gender || 'Not specified'}</p>
+                                    </div>
+                                    <div className="detail-box">
+                                      <strong>Email</strong>
+                                      <p>{member.memberId?.email}</p>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div >
