@@ -16,6 +16,7 @@ import TeamsComponent from './TeamsComponent';
 import TeamComponent from './TeamComponent';
 import ProfileComponent from './ProfileComponent';
 import NotificationComponent from './NotificationComponent';
+import ProjectsComponent from './ProjectsComponent';
 import '../Styles/EmployeeDashboard.css';
 import '../Styles/loading.css'
 
@@ -247,6 +248,13 @@ const EmployeeDashboard = () => {
             <TeamsComponent />
           </div>
         );
+      case 'projects':
+        return (
+          <div className='tasks-container'>
+            <h3 className="page-title">My Projects</h3>
+            <ProjectsComponent />
+          </div>
+        );
       case 'profile':
         return (
           <div>
@@ -283,19 +291,23 @@ const EmployeeDashboard = () => {
           </li>
           <li className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>
             <ClipboardListIcon className="nav-icon" />
-            <span>My Tasks</span>
+            <span>Tasks</span>
           </li>
           <li className={`nav-item ${activeTab === 'teams' ? 'active' : ''}`} onClick={() => setActiveTab('teams')}>
             <UserGroupIcon className="nav-icon" />
-            <span>My Teams</span>
+            <span>Teams</span>
+          </li>
+          <li className={`nav-item ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => setActiveTab('projects')}>
+            <ClipboardListIcon className="nav-icon" />
+            <span>Projects</span>
           </li>
           <li className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
             <UserIcon className="nav-icon" />
-            <span>My Profile</span>
+            <span>Profile</span>
           </li>
           <li className={`nav-item ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>
             <ChartBarIcon className="nav-icon" />
-            <span>My Performance</span>
+            <span>Performance</span>
           </li>
         </ul>
       </div>

@@ -841,6 +841,21 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case 'analytics':
+        return (
+          <div className="tasks-container">
+            <div className="section-header">
+              <h3 className="page-title">Performance Overview</h3>
+            </div>
+            <img
+              src="comingsoon.jpg"
+              alt="Coming Soon"
+              className="coming-soon-image"
+            />
+
+          </div>
+        );
+
       default:
         return <div>Content not available</div>;
     }

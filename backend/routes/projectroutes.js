@@ -67,6 +67,73 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Project details in which logged-in user is a part of
+router.get("/user-projects", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const projects = await Project.find({
+      members: userId
+    }).populate('createdBy', 'firstName lastName email');
+
+    const projectsDetailsOfUser = await Promise.all(projects.map(async (project) => {
+      // Count total tasks assigned to the user in this project
+      const totalTasks = await Task.countDocuments({
+        project: project._id,
+        assignedTo: userId
+      });
+
+      // Count completed tasks for the user in this project
+      const completedTasks = await Task.countDocuments({
+        project: project._id,
+        assignedTo: userId,
+        status: 'completed'
+      });
+
+      return {
+        _id: project._id,
+        name: project.name,
+        description: project.description,
+        totalTasks,
+        completedTasks,
+        createdBy: project.createdBy
+      };
+    }));
+
+    res.json(projectsDetailsOfUser);
+  } catch (error) {
+    console.error('Error fetching user projects:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get project details
+router.get('/details/:projectId', authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId)
+      .populate('createdBy', 'firstName lastName email')
+      .populate('members', 'firstName lastName email');
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Get tasks for this project
+    const tasks = await Task.find({ project: project._id, assignedTo: req.user.userId })
+      .populate('assignedTo', 'firstName lastName email')
+      .populate('adminId', 'firstName lastName email');
+
+    const projectDetails = {
+      ...project.toObject(),
+      tasks
+    };
+
+    res.json(projectDetails);
+  } catch (error) {
+    console.error('Error fetching project details:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 //Delete project
 router.delete("/:id", authMiddleware, async (req, res) => {
   try {

@@ -98,7 +98,7 @@ router.get('/user-teams', authMiddleware, async (req, res) => {
         { 'members.memberId': employeeId }
       ]
     });
-
+    console.log(teams);
     if (!teams || teams.length === 0) {
       return res.json([]);
     }
