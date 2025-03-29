@@ -9,7 +9,19 @@ const ProjectSchema = new mongoose.Schema({
   members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   createdAt: { type: Date, default: Date.now },
+  messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }],
+  lastMessage: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' }
 });
+
+ProjectSchema.methods.addMessage = async function (messageId) {
+  // Add message to project's messages array
+  this.messages.push(messageId);
+
+  this.lastMessage = messageId;
+
+  await this.save();
+  return this;
+};
 
 const Project = mongoose.model('Project', ProjectSchema);
 

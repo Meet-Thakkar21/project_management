@@ -1,7 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Authentication/Login';
 import Signup from './Authentication/Signup';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -9,6 +9,7 @@ import Home from './Components/Home';
 import AdminDashboard from './Components/AdminDashboard';
 import EmployeeDashboard from './Components/EmployeeDashboard';
 import ChatApp from './Components/Chat';
+import ProjectChat from './Components/ProjectChatComponent';
 
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
 /*************  ✨ Codeium Command ⭐  *************/
@@ -28,7 +29,8 @@ const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleuserc
           <Route path="/signup" element={<Signup />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
-          <Route path='/chat' element={<ChatApp />} />
+          <Route path="/projects/:projectId/chat" element={<ProjectChat />} />
+          <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>

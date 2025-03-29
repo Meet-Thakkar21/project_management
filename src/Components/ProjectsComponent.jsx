@@ -56,8 +56,9 @@ const ProjectsComponent = () => {
         }
     };
 
-    const handleStartChat = () => {
-        navigate('/chat');
+    const handleStartChat = (projectId) => {
+        // Navigate to project-specific chat
+        navigate(`/projects/${projectId}/chat`);
     };
 
     const closeProjectDetails = () => {
@@ -92,11 +93,11 @@ const ProjectsComponent = () => {
                             <p className="project-tasks">
                                 Tasks: {project.completedTasks} / {project.totalTasks}
                             </p>
-                            <button 
+                            <button
                                 className="start-chat-btn"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    handleStartChat();
+                                    handleStartChat(project._id);
                                 }}
                             >
                                 Start Chat
@@ -123,16 +124,16 @@ const ProjectsComponent = () => {
                             <div className="admin-card">
                                 <UsersIcon className="h-6 w-6 text-red-500" />
                                 <div>
-                                    <p style={{fontWeight: "600"}}>
+                                    <p style={{ fontWeight: "600" }}>
                                         {selectedProject.createdBy.firstName} {selectedProject.createdBy.lastName}
                                     </p>
-                                    <p className="adminEmail"> { selectedProject.createdBy.email } </p>
+                                    <p className="adminEmail"> {selectedProject.createdBy.email} </p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="project-tasks-list">
-                        <h3 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>My Tasks</h3>
+                            <h3 style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "12px" }}>My Tasks</h3>
                             {selectedProject.tasks && selectedProject.tasks.map(task => (
                                 <div key={task._id} className="task-card">
                                     <div>
