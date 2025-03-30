@@ -157,8 +157,8 @@ function ProjectChat() {
             return;
         }
 
-        // Check file size (limit to 5MB)
-        if (file.size > 5 * 1024 * 1024) {
+        // Check file size (limit to 100MB)
+        if (file.size > 100 * 1024 * 1024) {
             alert('File size should not exceed 5MB');
             return;
         }
@@ -238,7 +238,7 @@ function ProjectChat() {
                 imageUrl: imageUrl
             };
 
-            console.log("🚀 Sending Message:", messageData);
+            console.log("Sending Message:", messageData);
 
             // Emit message event to server
             socket.emit("sendMessage", messageData);
@@ -317,15 +317,12 @@ function ProjectChat() {
         setNewMessage(e.target.value);
         const textarea = textareaRef.current;
 
-        // Reset height to auto to properly calculate new height
         textarea.style.height = "auto";
-        // Set the height to scrollHeight to fit content
         textarea.style.height = `${textarea.scrollHeight}px`;
     };
 
     // Handle key press for sending message with Enter
     const handleKeyPress = (e) => {
-        // Send message on Enter, but allow Shift+Enter for new line
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage(e);
@@ -336,10 +333,7 @@ function ProjectChat() {
     const onEmojiClick = (emojiObject) => {
         setNewMessage(prevMessage => prevMessage + emojiObject.emoji);
         if (textareaRef.current) {
-            // Focus back on textarea after selecting emoji
             textareaRef.current.focus();
-
-            // Recalculate textarea height
             setTimeout(() => {
                 textareaRef.current.style.height = "auto";
                 textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;

@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
 const cors = require('cors');
+const path = require('path');
 const projectRoutes = require('./routes/projectroutes');
 const teamRoutes = require('./routes/teamRoute');
 const taskRoutes = require("./routes/taskRoute");
@@ -37,7 +38,7 @@ app.use('/api/teams', teamRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use('/api/chat', messageRoutes);
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Create HTTP Server - IMPORTANT: Use this server for both Express and Socket.IO
 const server = http.createServer(app);
 
@@ -67,11 +68,11 @@ io.on('connection', (socket) => {
 
   // Send message
   socket.on('sendMessage', async (data) => {
-    const { projectId, senderId, text } = data;
-    console.log("Message Received:", { projectId, senderId, text });
+    const { projectId, senderId, text, imageUrl } = data;
+    console.log("Message Received:", { projectId, senderId, text, imageUrl });
     try {
       // Save message to database
-      const newMessage = new Message({ project: projectId, sender: senderId, text });
+      const newMessage = new Message({ project: projectId, sender: senderId, text: text || '', imageUrl: imageUrl || null  });
       await newMessage.save();
 
       // Update project messages
@@ -86,10 +87,12 @@ io.on('connection', (socket) => {
         await project.save();
 
         const sender = await User.findById(senderId);
+        
         // Broadcast message to all clients in the project room
         io.to(projectId).emit('receiveMessage', {
           _id: newMessage._id,
-          text,
+          text: newMessage.text,
+          imageUrl: newMessage.imageUrl,
           sender: { _id: sender._id, firstName: sender.firstName, lastName: sender.lastName },
           createdAt: newMessage.createdAt,
         });
