@@ -3,8 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import axios from 'axios';
 import '../Styles/ProjectChat.css';
-import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage } from 'react-icons/bi'; // Added BiImage for image upload
+import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCheck } from 'react-icons/bi'; // Added BiImage for image upload
 import EmojiPicker from 'emoji-picker-react';
+import moment from 'moment';
 
 // Connect to the socket server
 const socket = io("http://localhost:5000", {
@@ -37,10 +38,15 @@ function ProjectChat() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-    
+
+    const [editingMessageId, setEditingMessageId] = useState(null);
+    const [editMessageText, setEditMessageText] = useState('');
+    const [isEditing, setIsEditing] = useState(false);
+
     const messagesEndRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const textareaRef = useRef(null);
+    const editTextareaRef = useRef(null);
     const emojiPickerRef = useRef(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
@@ -55,13 +61,6 @@ function ProjectChat() {
             return;
         }
 
-        try {
-            // Your token validation code here
-        } catch (error) {
-            // Error handling
-        }
-
-        // Parse user info
         try {
             const userObj = JSON.parse(userString);
             setCurrentUser(userObj);
@@ -81,27 +80,35 @@ function ProjectChat() {
             scrollToBottom();
         });
 
+        // Listen for message updates
+        socket.on("messageUpdated", (updatedMessage) => {
+            console.log("Message updated:", updatedMessage);
+            setMessages((prevMessages) =>
+                prevMessages.map(msg =>
+                    msg._id === updatedMessage._id ? { ...msg, ...updatedMessage } : msg
+                )
+            );
+        });
+
         return () => {
             // Clean up on component unmount
             if (currentUser) {
                 socket.emit("leaveRoom", { projectId, userId: currentUser.id });
             }
             socket.off("receiveMessage");
+            socket.off("messageUpdated");
         };
     }, [projectId, navigate]);
 
     // Fetch project details and messages
     const fetchProjectDetails = async () => {
-        // Your existing fetchProjectDetails code
         try {
-            // Get token from local storage
             const token = localStorage.getItem('token');
             if (!token) {
                 navigate('/login');
                 return;
             }
 
-            // Fetch project details
             const projectResponse = await axios.get(`http://localhost:5000/api/projects/details/${projectId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -111,7 +118,6 @@ function ProjectChat() {
             setProject(project);
 
             setIsLoadingMore(true);
-            // Fetch project-specific messages
             const messagesResponse = await axios.get(`http://localhost:5000/api/chat/project/${projectId}?page=${pagination.currentPage}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -146,6 +152,101 @@ function ProjectChat() {
         fetchProjectDetails();
     }, [projectId, pagination.currentPage, navigate]);
 
+    // Check if a message is within the 15-minute edit window
+    const isWithinEditWindow = (messageDate) => {
+        const fifteenMinutesAgo = moment().subtract(15, 'minutes');
+        return moment(messageDate).isAfter(fifteenMinutesAgo);
+    };
+
+    // Start editing a message
+    const startEditingMessage = (message) => {
+        setEditingMessageId(message._id);
+        setEditMessageText(message.text);
+        setIsEditing(true);
+
+        // Focus and resize the edit textarea after it's rendered
+        setTimeout(() => {
+            if (editTextareaRef.current) {
+                editTextareaRef.current.focus();
+                editTextareaRef.current.style.height = "auto";
+                editTextareaRef.current.style.height = `${editTextareaRef.current.scrollHeight}px`;
+            }
+        }, 0);
+    };
+
+    // Cancel editing
+    const cancelEditing = () => {
+        setEditingMessageId(null);
+        setEditMessageText('');
+        setIsEditing(false);
+    };
+
+    // Save edited message
+    const saveEditedMessage = async (messageId) => {
+        if (!editMessageText.trim()) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.put(
+                `http://localhost:5000/api/chat/edit/${messageId}`,
+                { text: editMessageText },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            // Update local message state
+            setMessages(prevMessages =>
+                prevMessages.map(msg =>
+                    msg._id === messageId
+                        ? { ...msg, text: editMessageText, isEdited: true, updatedAt: Date.now() }
+                        : msg
+                )
+            );
+
+            // Emit message update event to notify other clients
+            socket.emit("updateMessage", {
+                messageId,
+                projectId,
+                text: editMessageText,
+                isEdited: true
+            });
+
+            // Reset editing state
+            cancelEditing();
+
+        } catch (error) {
+            console.error('Error editing message:', error);
+            if (error.response && error.response.status === 403) {
+                alert(error.response.data.message);
+            } else {
+                alert('Error editing message');
+            }
+        }
+    };
+
+    // Auto-resize edit textarea
+    const handleEditTextareaChange = (e) => {
+        setEditMessageText(e.target.value);
+        const textarea = editTextareaRef.current;
+
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
+    };
+
+    // Handle key press in edit textarea
+    const handleEditKeyPress = (e, messageId) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveEditedMessage(messageId);
+        } else if (e.key === 'Escape') {
+            cancelEditing();
+        }
+    };
     // Handle file selection
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -251,7 +352,7 @@ function ProjectChat() {
             if (textareaRef.current) {
                 textareaRef.current.style.height = "auto";
             }
-            
+
             // Reset file input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
@@ -475,6 +576,8 @@ function ProjectChat() {
                                             message.sender &&
                                             message.sender._id === currentUser.id;
 
+                                        const canEdit = isCurrentUser && isWithinEditWindow(message.createdAt);
+                                        const isEdited = message.isEdited;
                                         return (
                                             <div
                                                 key={message._id}
@@ -501,29 +604,71 @@ function ProjectChat() {
                                                     )}
 
                                                     <div className="message-bubble">
-                                                        {message.text && (
-                                                            <div className="message-text">
-                                                                {formatMessageText(message.text)}
-                                                            </div>
-                                                        )}
-                                                        
-                                                        {message.imageUrl && (
-                                                            <div className="message-image-container">
-                                                                <img 
-                                                                    src={message.imageUrl} 
-                                                                    alt="Shared" 
-                                                                    className="message-image"
-                                                                    onClick={() => window.open(message.imageUrl, '_blank')}
+                                                        {editingMessageId === message._id ? (
+                                                            <div className="edit-message-container">
+                                                                <textarea
+                                                                    ref={editTextareaRef}
+                                                                    value={editMessageText}
+                                                                    onChange={handleEditTextareaChange}
+                                                                    onKeyDown={(e) => handleEditKeyPress(e, message._id)}
+                                                                    className="edit-message-input"
+                                                                    rows="1"
                                                                 />
+                                                                <div className="edit-actions">
+                                                                    <button
+                                                                        className="save-edit-btn"
+                                                                        onClick={() => saveEditedMessage(message._id)}
+                                                                    >
+                                                                        <BiCheck />
+                                                                    </button>
+                                                                    <button
+                                                                        className="cancel-edit-btn"
+                                                                        onClick={cancelEditing}
+                                                                    >
+                                                                        <BiX />
+                                                                    </button>
+                                                                </div>
                                                             </div>
+                                                        ) : (
+                                                            <>
+                                                                {message.text && (
+                                                                    <div className="message-text">
+                                                                        {formatMessageText(message.text)}
+                                                                    </div>
+                                                                )}
+
+                                                                {message.imageUrl && (
+                                                                    <div className="message-image-container">
+                                                                        <img
+                                                                            src={message.imageUrl}
+                                                                            alt="Shared"
+                                                                            className="message-image"
+                                                                            onClick={() => window.open(message.imageUrl, '_blank')}
+                                                                        />
+                                                                    </div>
+                                                                )}
+
+                                                                <div className="message-footer">
+                                                                    <div className="message-time">
+                                                                        {new Date(message.updatedAt).toLocaleTimeString([], {
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                        })}
+                                                                        {isEdited && <span className="edited-indicator"> (edited)</span>}
+                                                                    </div>
+
+                                                                    {canEdit && (
+                                                                        <button
+                                                                            className="edit-message-btn"
+                                                                            onClick={() => startEditingMessage(message)}
+                                                                            title="Edit message"
+                                                                        >
+                                                                            <BiPencil />
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </>
                                                         )}
-                                                        
-                                                        <div className="message-time">
-                                                            {new Date(message.createdAt).toLocaleTimeString([], {
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                            })}
-                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -540,7 +685,7 @@ function ProjectChat() {
                         <div className="image-preview-container">
                             <div className="image-preview-wrapper">
                                 <img src={imagePreview} alt="Preview" className="image-preview" />
-                                <button 
+                                <button
                                     className="remove-image-btn"
                                     onClick={removeSelectedImage}
                                 >

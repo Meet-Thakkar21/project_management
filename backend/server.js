@@ -39,6 +39,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/employee', employeeRoutes);
 app.use('/api/chat', messageRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // Create HTTP Server - IMPORTANT: Use this server for both Express and Socket.IO
 const server = http.createServer(app);
 
@@ -53,7 +54,7 @@ const io = new Server(server, {
 // Socket.IO Event Handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
-  
+
   // Handle room joining
   socket.on('joinRoom', ({ projectId, userId }) => {
     socket.join(projectId);
@@ -72,7 +73,7 @@ io.on('connection', (socket) => {
     console.log("Message Received:", { projectId, senderId, text, imageUrl });
     try {
       // Save message to database
-      const newMessage = new Message({ project: projectId, sender: senderId, text: text || '', imageUrl: imageUrl || null  });
+      const newMessage = new Message({ project: projectId, sender: senderId, text: text || '', imageUrl: imageUrl || null });
       await newMessage.save();
 
       // Update project messages
@@ -87,7 +88,7 @@ io.on('connection', (socket) => {
         await project.save();
 
         const sender = await User.findById(senderId);
-        
+
         // Broadcast message to all clients in the project room
         io.to(projectId).emit('receiveMessage', {
           _id: newMessage._id,
@@ -95,13 +96,41 @@ io.on('connection', (socket) => {
           imageUrl: newMessage.imageUrl,
           sender: { _id: sender._id, firstName: sender.firstName, lastName: sender.lastName },
           createdAt: newMessage.createdAt,
+          updatedAt: newMessage.createdAt
         });
       }
     } catch (error) {
       console.error('Error sending message:', error);
     }
   });
-  
+
+  // Handle message updates
+  socket.on('updateMessage', async (data) => {
+    const { messageId, projectId, text, isEdited } = data;
+    console.log("Message Update Received:", { messageId, projectId, text, isEdited });
+
+    try {
+      // Find the message in the database
+      const message = await Message.findById(messageId);
+
+      if (!message) {
+        console.error('Message not found');
+        return;
+      }
+
+      // Broadcast the updated message to all clients in the project room
+      io.to(projectId).emit('messageUpdated', {
+        _id: message._id,
+        text: text,
+        isEdited: isEdited,
+        updatedAt: new Date()
+      });
+
+    } catch (error) {
+      console.error('Error updating message:', error);
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('🚪 User disconnected:', socket.id);

@@ -49,7 +49,7 @@ router.post('/send', authMiddleware, async (req, res) => {
 });
 */
 
-// ✅ Multer Configuration
+// Multer Configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = 'uploads/';
@@ -111,7 +111,7 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
 
     const messages = await Message.find({ project: projectId })
       .populate('sender', 'firstName lastName email')
-      .select('text imageUrl createdAt')
+      .select('text imageUrl createdAt updatedAt')
       .sort({ createdAt: 1 }) // Most recent first
       .skip(skip)
       .limit(limit);

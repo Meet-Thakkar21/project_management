@@ -268,6 +268,101 @@
     display: initial;
 }
 
+/* Edit Message */
+
+/* Edit Mode Container */
+.edit-message-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Edit Mode Textarea */
+.edit-message-input {
+    width: 350px;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    resize: vertical;
+    outline: none;
+    box-shadow: inset 0px 1px 3px rgba(0, 0, 0, 0.1);
+    transition: border-color 0.3s;
+}
+
+.edit-message-input:focus {
+    border-color: #007bff;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.save-edit-btn,
+.cancel-edit-btn {
+    padding: 8px 12px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.save-edit-btn {
+    background-color: #28a745;
+    color: #fff;
+}
+
+.save-edit-btn:hover {
+    background-color: #218838;
+}
+
+.cancel-edit-btn {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.cancel-edit-btn:hover {
+    background-color: #c82333;
+}
+
+/* Message Text Styling */
+.message-text {
+    font-size: 16px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.edited-indicator {
+    font-style: italic;
+    color: #888;
+    font-size: 12px;
+    margin-left: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .message-bubble {
+        max-width: 95%;
+    }
+
+    .edit-message-input {
+        font-size: 14px;
+    }
+
+    .save-edit-btn,
+    .cancel-edit-btn {
+        font-size: 14px;
+    }
+}
+
+
 /* Loading States */
 .loading-container,
 .empty-chat {
@@ -485,6 +580,7 @@
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }

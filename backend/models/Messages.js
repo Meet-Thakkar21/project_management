@@ -6,7 +6,9 @@ const MessageSchema = new mongoose.Schema({
     text: { type: String, trim: true },
     imageUrl: { type: String, default: null },
     readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    updatedAt: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now },
+    isEdited: { type: Boolean, default: false },
     type: { type: String, enum: ['text', 'system', 'notification'], default: 'text' }
 }, {
     timestamps: true
