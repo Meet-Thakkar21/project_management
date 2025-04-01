@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../Styles/AdminDashboard.css';
 import '../Styles/loading.css';
 import NotificationComponent from './NotificationComponent';
 import axios from 'axios';
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modalType, setModalType] = useState('');
@@ -475,6 +477,11 @@ const AdminDashboard = () => {
     setShowModal(true);
   };
 
+  // Project chat navigation for admin
+  const openProjectChat = (projectId) => {
+    navigate(`/projects/${projectId}/chat`);
+  };
+
   const renderDashboardContent = () => {
     if (loading) {
       return (
@@ -537,7 +544,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="project-list">
                   {projects.slice(0, 4).map(project => (
-                    <div className="project-card" key={project._id}>
+                    <div className="projectcard" key={project._id}>
                       <h3>{project.name}</h3>
                       {/* <p>{project.description}</p> */}
                       <div className="project-progress">
@@ -641,8 +648,8 @@ const AdminDashboard = () => {
                         <button className="icon-button" onClick={() => openProjectDetailsModal(project)}>
                           <i className="fas fa-eye"></i>
                         </button>
-                        <button className="icon-button">
-                          <i className="fas fa-edit"></i>
+                        <button className="icon-button" onClick={() => openProjectChat(project._id)}>
+                          <i className="fas fa-comment-dots"></i>
                         </button>
                         <button className="icon-button" onClick={() => openDeleteProjectModal(project._id)}>
                           <i className="fas fa-trash-alt"></i>

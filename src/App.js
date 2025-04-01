@@ -30,6 +30,7 @@ const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleuserc
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
           <Route path="/projects/:projectId/chat" element={<ProjectChat />} />
+          <Route path="/unauthorized" element={<Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </Router>

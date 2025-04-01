@@ -85,7 +85,7 @@ io.on('connection', (socket) => {
       // Update project messages
       const project = await Project.findById(projectId);
 
-      if (!project.members.includes(senderId)) {
+      if (!project.members.includes(senderId) && project.createdBy.toString() !== senderId) {
         return;
       }
       if (project) {

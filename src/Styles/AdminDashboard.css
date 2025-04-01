@@ -341,7 +341,7 @@ body {
   gap: 20px;
 }
 
-.project-card {
+.projectcard {
   background-color: var(--bg-color);
   border-radius: var(--radius);
   padding: 20px;
@@ -349,7 +349,7 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.project-card h3 {
+.projectcard h3 {
   font-size: 1.1rem;
   font-weight: 600;
   margin-bottom: 15px;

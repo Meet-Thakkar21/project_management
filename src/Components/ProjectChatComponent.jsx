@@ -120,6 +120,15 @@ function ProjectChat() {
             const { tasks, ...project } = projectResponse.data;
             setProject(project);
 
+            const userString = localStorage.getItem('user');
+            const userObj = JSON.parse(userString);
+            const isAdmin = project.createdBy._id === userObj.id;
+            const isMember = project.members.some(member => member._id === userObj.id);
+
+            if (!isAdmin && !isMember) {
+                navigate('/unauthorized'); // Redirect if not authorized
+                return;
+            }
             setIsLoadingMore(true);
             const messagesResponse = await axios.get(`http://localhost:5000/api/chat/project/${projectId}?page=${pagination.currentPage}`, {
                 headers: {
@@ -578,12 +587,10 @@ function ProjectChat() {
                     {project.members && project.members.length > 0 ? (
                         project.members.map((member) => (
                             <li key={member._id} className="member-item">
-                                <div className="member-details">
                                     <span className="member-name">
                                         {member.firstName} {member.lastName}
                                     </span>
                                     <span className="member-email">{member.email}</span>
-                                </div>
                             </li>
                         ))
                     ) : (
@@ -595,9 +602,15 @@ function ProjectChat() {
             {/* Chat Section */}
             <div className="chat-section">
                 <header className="chat-header">
-                    <Link to="/employee-dashboard" className="back-button">
+                    <Link to={currentUser && project && project.createdBy._id === currentUser.id ? "/admin-dashboard" : "/employee-dashboard"} className="back-button">
                         <BiArrowBack />
                     </Link>
+                    <div className="admin-details">
+                        <span className="admin-name">
+                            Admin : {project.createdBy.firstName} {project.createdBy.lastName}
+                        </span>
+                        <p className="member-email">{project.createdBy.email}</p>
+                    </div>
                     <div className="project-members">
                         {project.members && project.members.length > 0 && (
                             <div className="member-avatars">
@@ -636,8 +649,8 @@ function ProjectChat() {
                         {messages.length === 0 ? (
                             <div className="empty-chat">
                                 <div className="empty-chat-icon">💬</div>
-                                <p>No messages yet</p>
-                                <p className="empty-chat-subtitle">Start the conversation!</p>
+                                <p>No messages yet </p>
+                                <p> Start the conversation!</p>
                             </div>
                         ) : (
                             Object.entries(messageGroups).map(([date, dateMessages]) => (

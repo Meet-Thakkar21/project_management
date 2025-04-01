@@ -119,9 +119,12 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+    console.log(senderId);
+    console.log("hello");
+    console.log(project.createdBy.toString());
 
     // Ensure user is a member of the project
-    if (!project.members.includes(senderId)) {
+    if (!project.members.includes(senderId) && project.createdBy.toString() !== senderId.toString()) {
       return res.status(403).json({ message: 'Not authorized to view messages in this project' });
     }
 
