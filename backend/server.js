@@ -69,11 +69,17 @@ io.on('connection', (socket) => {
 
   // Send message
   socket.on('sendMessage', async (data) => {
-    const { projectId, senderId, text, imageUrl } = data;
-    console.log("Message Received:", { projectId, senderId, text, imageUrl });
+    const { projectId, senderId, text, imageUrl, pdfUrl } = data;
+    console.log("Message Received:", { projectId, senderId, text, imageUrl, pdfUrl });
     try {
       // Save message to database
-      const newMessage = new Message({ project: projectId, sender: senderId, text: text || '', imageUrl: imageUrl || null });
+      const newMessage = new Message({
+        project: projectId,
+        sender: senderId,
+        text: text || '',
+        imageUrl: imageUrl || null,
+        pdfUrl: pdfUrl || null
+      });
       await newMessage.save();
 
       // Update project messages
@@ -94,6 +100,7 @@ io.on('connection', (socket) => {
           _id: newMessage._id,
           text: newMessage.text,
           imageUrl: newMessage.imageUrl,
+          pdfUrl: newMessage.pdfUrl,
           sender: { _id: sender._id, firstName: sender.firstName, lastName: sender.lastName },
           createdAt: newMessage.createdAt,
           updatedAt: newMessage.createdAt

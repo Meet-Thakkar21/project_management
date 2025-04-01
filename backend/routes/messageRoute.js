@@ -87,6 +87,27 @@ router.post('/upload-image', authMiddleware, upload.single('image'), async (req,
   }
 });
 
+// Pdf functionality in chat interface
+router.post('/upload-file', authMiddleware, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    // Create the URL for the uploaded file
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
+    return res.status(200).json({
+      message: 'File uploaded successfully',
+      fileUrl: fileUrl
+    });
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    return res.status(500).json({ message: 'Error uploading file' });
+  }
+});
+
 // Get messages for a specific project
 router.get('/project/:projectId', authMiddleware, async (req, res) => {
   try {

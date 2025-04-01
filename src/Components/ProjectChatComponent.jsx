@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import axios from 'axios';
 import '../Styles/ProjectChat.css';
-import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCheck } from 'react-icons/bi'; // Added BiImage for image upload
+import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCheck, BiFile } from 'react-icons/bi'; // Added BiImage for image upload
 import EmojiPicker from 'emoji-picker-react';
 import moment from 'moment';
 
@@ -37,6 +37,8 @@ function ProjectChat() {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [selectedPdf, setSelectedPdf] = useState(null);
+    const [pdfPreview, setPdfPreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
     const [editingMessageId, setEditingMessageId] = useState(null);
@@ -48,7 +50,8 @@ function ProjectChat() {
     const textareaRef = useRef(null);
     const editTextareaRef = useRef(null);
     const emojiPickerRef = useRef(null);
-    const fileInputRef = useRef(null);
+    const imageInputRef = useRef(null);
+    const pdfInputRef = useRef(null);
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
 
@@ -247,26 +250,22 @@ function ProjectChat() {
             cancelEditing();
         }
     };
-    // Handle file selection
-    const handleFileChange = (e) => {
+
+    // Handle image file selection
+    const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
-        // Check if file is an image
-        if (!file.type.match('image.*')) {
-            alert('Please select an image file');
-            return;
-        }
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
             alert('File size should not exceed 5MB');
             return;
         }
-
+        if (!file.type.match('image.*')) {
+            alert('Please select an image file');
+            return;
+        }
         setSelectedImage(file);
-
-        // Create image preview
         const reader = new FileReader();
         reader.onloadend = () => {
             setImagePreview(reader.result);
@@ -274,14 +273,43 @@ function ProjectChat() {
         reader.readAsDataURL(file);
     };
 
+    // Handle PDF file selection
+    const handlePdfChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check file size (limit to 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            alert('File size should not exceed 5MB');
+            return;
+        }
+        if (file.type !== 'application/pdf') {
+            alert('Please select a PDF file');
+            return;
+        }
+
+        setSelectedPdf(file);
+        setPdfPreview(file.name);
+    };
+
     // Remove selected image
     const removeSelectedImage = () => {
         setSelectedImage(null);
         setImagePreview(null);
-        if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+        if (imageInputRef.current) {
+            imageInputRef.current.value = '';
         }
     };
+
+    // Remove selected PDF
+    const removePdf = () => {
+        setSelectedPdf(null);
+        setPdfPreview(null);
+        if (pdfInputRef.current) {
+            pdfInputRef.current.value = '';
+        }
+    };
+
 
     // Upload image to server
     const uploadImage = async () => {
@@ -314,18 +342,56 @@ function ProjectChat() {
         }
     };
 
+    // Upload PDF to server
+    const uploadPdf = async () => {
+        if (!selectedPdf) return null;
+
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('file', selectedPdf);
+        formData.append('projectId', projectId);
+        formData.append('fileType', 'pdf');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                'http://localhost:5000/api/chat/upload-file',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+            setIsUploading(false);
+            return response.data.fileUrl;
+        } catch (error) {
+            console.error('Error uploading PDF:', error);
+            setIsUploading(false);
+            alert('Failed to upload PDF');
+            return null;
+        }
+    };
+
     // Send message using WebSocket
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim() && !selectedImage) return;
+        if (!newMessage.trim() && !selectedImage && !selectedPdf) return;
 
         let imageUrl = null;
+        let pdfUrl = null;
+
         if (selectedImage) {
             imageUrl = await uploadImage();
         }
 
+        if (selectedPdf) {
+            pdfUrl = await uploadPdf();
+        }
+
         // If there was an image but upload failed, and there's no text, stop
-        if (!newMessage.trim() && selectedImage && !imageUrl) return;
+        if (!newMessage.trim() && ((selectedImage && !imageUrl) || (selectedPdf && !pdfUrl))) return;
 
         const userString = localStorage.getItem('user');
         try {
@@ -336,7 +402,8 @@ function ProjectChat() {
                 projectId,
                 senderId,
                 text: newMessage.trim(),
-                imageUrl: imageUrl
+                imageUrl: imageUrl,
+                pdfUrl: pdfUrl
             };
 
             console.log("Sending Message:", messageData);
@@ -347,15 +414,20 @@ function ProjectChat() {
             setNewMessage(''); // Clear input
             setSelectedImage(null); // Clear selected image
             setImagePreview(null); // Clear image preview
+            setSelectedPdf(null); // Clear selected PDF
+            setPdfPreview(null); // Clear PDF preview
 
             // Reset textarea height
             if (textareaRef.current) {
                 textareaRef.current.style.height = "auto";
             }
 
-            // Reset file input
-            if (fileInputRef.current) {
-                fileInputRef.current.value = '';
+            // Reset both file inputs (updated)
+            if (imageInputRef.current) {
+                imageInputRef.current.value = '';
+            }
+            if (pdfInputRef.current) {
+                pdfInputRef.current.value = '';
             }
         } catch (err) {
             console.error("Error parsing user data:", err);
@@ -470,7 +542,11 @@ function ProjectChat() {
 
     // Trigger file input click
     const handleImageButtonClick = () => {
-        fileInputRef.current?.click();
+        imageInputRef.current?.click();
+    };
+
+    const handlePdfButtonClick = () => {
+        pdfInputRef.current?.click();
     };
 
     if (loading) {
@@ -648,6 +724,15 @@ function ProjectChat() {
                                                                     </div>
                                                                 )}
 
+                                                                {message.pdfUrl && (
+                                                                    <div className="message-pdf-container">
+                                                                        <a href={message.pdfUrl} target="_blank" rel="noopener noreferrer" className="pdf-link">
+                                                                            <BiFile size={20} />
+                                                                            <span>View PDF</span>
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+
                                                                 <div className="message-footer">
                                                                     <div className="message-time">
                                                                         {new Date(message.updatedAt).toLocaleTimeString([], {
@@ -695,6 +780,24 @@ function ProjectChat() {
                         </div>
                     )}
 
+                    {/* PDF preview if a PDF is selected */}
+                    {pdfPreview && (
+                        <div className="pdf-preview-container">
+                            <div className="pdf-preview-wrapper">
+                                <div className="pdf-preview">
+                                    <BiFile size={24} />
+                                    <span>{pdfPreview}</span>
+                                </div>
+                                <button
+                                    className="remove-pdf-btn"
+                                    onClick={removePdf}
+                                >
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <form className="message-form" onSubmit={handleSendMessage}>
                         <div className="message-input-container">
                             <button
@@ -713,12 +816,28 @@ function ProjectChat() {
                                 <BiImage />
                             </button>
 
+                            <button
+                                type="button"
+                                className="pdf-button"
+                                onClick={handlePdfButtonClick}
+                            >
+                                <BiFile />
+                            </button>
+
                             {/* Hidden file input */}
                             <input
                                 type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
+                                ref={imageInputRef}
+                                onChange={handleImageChange}
                                 accept="image/*"
+                                style={{ display: 'none' }}
+                            />
+
+                            <input
+                                type="file"
+                                ref={pdfInputRef}
+                                onChange={handlePdfChange}
+                                accept="application/pdf"
                                 style={{ display: 'none' }}
                             />
 
