@@ -1,14 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import CustomAlert from './CustomAlert';
-import '../Styles/CustomAlert.css';
 import '../Styles/TasksComponent.css';
 import '../Styles/loading.css';
 
 const TasksComponent = () => {
-    const navigate = useNavigate();
-    const [alert, setAlert] = useState({ type: '', message: '' });
     const [tasks, setTasks] = useState([]);
     const [filteredTasks, setFilteredTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -16,21 +11,13 @@ const TasksComponent = () => {
     const [selectedProject, setSelectedProject] = useState("all");
     const [projects, setProjects] = useState([]);
 
-    const showAlert = (type, message) => {
-        setAlert({ type, message });
-        setTimeout(() => setAlert({ type: '', message: '' }), 3000);
-    };
-
     useEffect(() => {
         const fetchTasks = async () => {
             try {
                 setLoading(true);
                 const token = localStorage.getItem("token");
                 if (!token) {
-                    setTimeout(() => {
-                        setAlert({ type: 'error', message: 'No token found. Redirecting you to Login!' });
-                        navigate("/login"); // Navigate after 2 seconds
-                    }, 2000);
+                    alert("No token found. Please log in again.");
                     return;
                 }
 
@@ -55,7 +42,6 @@ const TasksComponent = () => {
 
                 setLoading(false);
             } catch (error) {
-                showAlert("error", "Faile to fetch tasks");
                 console.error("Error fetching tasks:", error);
                 setLoading(false);
             }
@@ -82,7 +68,6 @@ const TasksComponent = () => {
 
             applyFilters(selectedStatus, selectedProject); // Reapply filters after updating status
         } catch (error) {
-            showAlert("error", "Failed to update task status");
             console.error("Error updating task status:", error);
         }
     };
@@ -137,13 +122,6 @@ const TasksComponent = () => {
 
     return (
         <div className="tasks-section">
-            {alert.message && (
-                <CustomAlert
-                    type={alert.type}
-                    message={alert.message}
-                    onClose={() => setAlert({ type: '', message: '' })}
-                />
-            )}
             {/* Filter Buttons */}
             <div className="filters">
                 <button className={`tasks-filter-btn ${selectedStatus === "all" ? "active" : ""}`} onClick={() => applyFilters("all", selectedProject)}>All Tasks</button>

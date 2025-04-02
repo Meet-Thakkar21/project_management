@@ -4,6 +4,7 @@ const Task = require("../models/Task");
 const Team = require("../models/Team");
 const Project = require("../models/Projects");
 const User = require("../models/User");
+const Messages = require("../models/Messages");
 const authMiddleware = require("../Middleware/authMiddleware");
 
 // Get all tasks assigned to the logged-in employee
@@ -159,8 +160,8 @@ router.get('/profile', authMiddleware, async (req, res) => {
 //Get member profile
 router.get('/memberprofile/:memberId', async (req, res) => {
     try {
-        const {memberId} = req.params;
-        
+        const { memberId } = req.params;
+
         const user = await User.findById(memberId).select('-password');
 
         if (!user) {
@@ -207,5 +208,107 @@ router.put('/profile', authMiddleware, async (req, res) => {
         res.status(500).json({ msg: 'Server Error' });
     }
 });
+
+router.get('/documents', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        // Find all teams the user is a member of
+        // const teams = await Team.find({ members: userId });
+        // const teamIds = teams.map(team => team._id);
+
+        // Find all projects the user has access to
+        const projects = await Project.find({ members: userId });
+        const projectIds = projects.map(project => project._id);
+
+        // Find all messages with documents in those projects
+        const messages = await Messages.find({
+            project: { $in: projectIds },
+            $or: [
+                { imageUrl: { $ne: null, $exists: true } },
+                { pdfUrl: { $ne: null, $exists: true } },
+                { videoUrl: { $ne: null, $exists: true } },
+                { audioUrl: { $ne: null, $exists: true } }
+            ]
+        })
+            .populate('project', 'name')
+            .populate('sender', 'firstName lastName')
+            .sort({ createdAt: -1 });
+
+        // Format the response
+        const documents = [];
+
+        for (const message of messages) {
+            // Add image document if exists
+            if (message.imageUrl) {
+                documents.push({
+                    _id: `${message._id}-image`,
+                    url: message.imageUrl,
+                    fileType: 'image',
+                    fileName: message.imageOriginalName || "Image",
+                    project: message.project,
+                    sender: message.sender,
+                    createdAt: message.createdAt
+                });
+            }
+
+            // Add PDF document if exists
+            if (message.pdfUrl) {
+                documents.push({
+                    _id: `${message._id}-pdf`,
+                    url: message.pdfUrl,
+                    fileType: 'pdf',
+                    fileName: message.pdfOriginalName || "PDF Document",
+                    project: message.project,
+                    sender: message.sender,
+                    createdAt: message.createdAt
+                });
+            }
+
+            // Add video document if exists
+            if (message.videoUrl) {
+                documents.push({
+                    _id: `${message._id}-video`,
+                    url: message.videoUrl,
+                    fileType: 'video',
+                    fileName: message.videoOriginalName || "Video File",
+                    project: message.project,
+                    sender: message.sender,
+                    createdAt: message.createdAt
+                });
+            }
+
+            // Add audio document if exists
+            if (message.audioUrl) {
+                documents.push({
+                    _id: `${message._id}-audio`,
+                    url: message.audioUrl,
+                    fileType: 'audio',
+                    fileName: message.audioOriginalName || "Audio File",
+                    project: message.project,
+                    sender: message.sender,
+                    createdAt: message.createdAt
+                });
+            }
+        }
+
+        res.json(documents);
+    } catch (err) {
+        console.error('Error fetching documents:', err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Helper function to extract file name from URL
+// function getFileNameFromUrl(url) {
+//     if (!url) return 'Unknown file';
+
+//     // Extract filename from URL
+//     const parts = url.split('/');
+//     const fileName = parts[parts.length - 1];
+
+//     // Remove any query parameters
+//     return fileName.split('?')[0];
+// }
 
 module.exports = router;

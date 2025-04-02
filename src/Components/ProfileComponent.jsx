@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { PencilIcon, UserIcon } from '@heroicons/react/outline';
-import CustomAlert from './CustomAlert';
-import '../Styles/CustomAlert.css';
 import '../Styles/ProfileComponent.css';
 
 const defaultProfileImage = "https://ui-avatars.com/api/?name=U&background=random";
 
 
 const ProfileComponent = () => {
-    const navigate = useNavigate();
-    const [alert, setAlert] = useState({ type: '', message: '' });
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -26,11 +21,6 @@ const ProfileComponent = () => {
         gender: '',
         skills: []
     });
-
-    const showAlert = (type, message) => {
-        setAlert({ type, message });
-        setTimeout(() => setAlert({ type: '', message: '' }), 3000);
-    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -62,7 +52,7 @@ const ProfileComponent = () => {
                 setLoading(false);
             } catch (err) {
                 console.error('Error fetching profile:', err);
-                showAlert('error', 'Failed to load profile data. Please try again later.');
+                setError('Failed to load profile data. Please try again later.');
                 setLoading(false);
             }
         };
@@ -111,10 +101,7 @@ const ProfileComponent = () => {
             const token = localStorage.getItem("token");
 
             if (!token) {
-                setTimeout(() => {
-                    setAlert({ type: 'error', message: 'No token found. Redirecting you to Login!' });
-                    navigate("/dashboard"); // Navigate after 2 seconds
-                }, 2000);
+                setUpdateError("No token found. Please log in again.");
                 return;
             }
 
@@ -169,13 +156,6 @@ const ProfileComponent = () => {
 
     return (
         <div className="profile-container">
-            {alert.message && (
-                <CustomAlert
-                    type={alert.type}
-                    message={alert.message}
-                    onClose={() => setAlert({ type: '', message: '' })}
-                />
-            )}
             <div className="profile-header">
                 <button
                     className="edit-button"

@@ -8,7 +8,6 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Home from './Components/Home';
 import AdminDashboard from './Components/AdminDashboard';
 import EmployeeDashboard from './Components/EmployeeDashboard';
-import ChatApp from './Components/Chat';
 import ProjectChat from './Components/ProjectChatComponent';
 
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";

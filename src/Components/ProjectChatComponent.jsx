@@ -6,7 +6,6 @@ import '../Styles/ProjectChat.css';
 import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCheck, BiFile, BiVideo, BiMicrophone, BiTrash } from 'react-icons/bi'; // Added BiImage for image upload
 import EmojiPicker from 'emoji-picker-react';
 import moment from 'moment';
-import CustomAlert from './CustomAlert';
 
 // Connect to the socket server
 const socket = io("http://localhost:5000", {
@@ -24,7 +23,6 @@ socket.on("connect_error", (err) => {
 });
 
 function ProjectChat() {
-    const [alert, setAlert] = useState({ type: '', message: '' });
     const { projectId } = useParams();
     const [project, setProject] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -38,6 +36,7 @@ function ProjectChat() {
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [imageFileName, setImageFileName] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [selectedPdf, setSelectedPdf] = useState(null);
     const [pdfPreview, setPdfPreview] = useState(null);
@@ -65,11 +64,6 @@ function ProjectChat() {
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
 
-    const showAlert = (type, message) => {
-        setAlert({ type, message });
-        setTimeout(() => setAlert({ type: '', message: '' }), 3000);
-    };
-
     useEffect(() => {
         const token = localStorage.getItem('token');
         const userString = localStorage.getItem('user');
@@ -87,7 +81,6 @@ function ProjectChat() {
             socket.emit("joinRoom", { projectId, userId: userObj.id });
         } catch (err) {
             console.error("Error parsing user data:", err);
-            showAlert("error", "Error while parsing your data !");
             navigate('/login');
             return;
         }
@@ -180,8 +173,7 @@ function ProjectChat() {
             setIsLoadingMore(false);
         } catch (err) {
             console.error('Error fetching project details:', err);
-            // setError('Failed to fetch project details');
-            showAlert("error", "Failed to fetch project details!");
+            setError('Failed to fetch project details');
             setIsLoadingMore(false);
         }
     };
@@ -262,9 +254,9 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error deleting message:', error);
             if (error.response && error.response.status === 403) {
-                showAlert("alert", `${error.response.data.message}`);
+                alert(error.response.data.message);
             } else {
-                showAlert("alert", "Error deleting message!");
+                alert('Error deleting message');
             }
             setShowDeleteConfirm(false);
             setDeletingMessageId(null);
@@ -312,9 +304,9 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error editing message:', error);
             if (error.response && error.response.status === 403) {
-                showAlert("alert", `${error.response.data.message}`);
+                alert(error.response.data.message);
             } else {
-                showAlert("alert", "Error editing message");
+                alert('Error editing message');
             }
         }
     };
@@ -345,14 +337,15 @@ function ProjectChat() {
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
-            showAlert('alert', 'File size should not exceed 100MB');
+            alert('File size should not exceed 100MB');
             return;
         }
         if (!file.type.match('image.*')) {
-            showAlert('alert', 'Please select an image file');
+            alert('Please select an image file');
             return;
         }
         setSelectedImage(file);
+        setImageFileName(file.name);
         const reader = new FileReader();
         reader.onloadend = () => {
             setImagePreview(reader.result);
@@ -367,11 +360,11 @@ function ProjectChat() {
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
-            showAlert('alert', 'File size should not exceed 100MB');
+            alert('File size should not exceed 100MB');
             return;
         }
         if (file.type !== 'application/pdf') {
-            showAlert('alert', 'Please select a PDF file');
+            alert('Please select a PDF file');
             return;
         }
 
@@ -386,11 +379,11 @@ function ProjectChat() {
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
-            showAlert('alert', 'File size should not exceed 100MB');
+            alert('File size should not exceed 100MB');
             return;
         }
         if (!file.type.match('audio.*')) {
-            showAlert('alert', 'Please select a Audio file');
+            alert('Please select a Audio file');
             return;
         }
 
@@ -405,11 +398,11 @@ function ProjectChat() {
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
-            showAlert('alert', 'File size should not exceed 100MB');
+            alert('File size should not exceed 100MB');
             return;
         }
         if (!file.type.match('video.*')) {
-            showAlert('alert', 'Please select a Video file');
+            alert('Please select a Video file');
             return;
         }
 
@@ -479,7 +472,7 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error uploading image:', error);
             setIsUploading(false);
-            showAlert('alert', 'Failed to upload image');
+            alert('Failed to upload image');
             return null;
         }
     };
@@ -511,7 +504,7 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error uploading PDF:', error);
             setIsUploading(false);
-            showAlert('alert', 'Failed to upload PDF');
+            alert('Failed to upload PDF');
             return null;
         }
     };
@@ -542,7 +535,7 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error uploading audio:', error);
             setIsUploading(false);
-            showAlert('alert', 'Failed to upload audio');
+            alert('Failed to upload audio');
             return null;
         }
     };
@@ -572,7 +565,7 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error uploading video:', error);
             setIsUploading(false);
-            showAlert('alert', 'Failed to upload video');
+            alert('Failed to upload video');
             return null;
         }
     };
@@ -594,7 +587,6 @@ function ProjectChat() {
                 (selectedAudio && !audioUrl) &&
                 (selectedVideo && !videoUrl))) {
             console.log("Upload failed");
-            showAlert('alert', 'Upload Failed.Try sometime later');
             return;
         }
 
@@ -632,7 +624,11 @@ function ProjectChat() {
                 imageUrl: imageUrl,
                 pdfUrl: pdfUrl,
                 audioUrl: audioUrl,
-                videoUrl: videoUrl
+                videoUrl: videoUrl,
+                imageOriginalName: imageFileName,
+                pdfOriginalName: pdfPreview,
+                audioOriginalName: audioPreview,
+                videoOriginalName: videoPreview
             };
 
             console.log("Sending Message:", messageData);
@@ -641,6 +637,7 @@ function ProjectChat() {
             socket.emit("sendMessage", messageData);
 
             setNewMessage(''); // Clear input
+            setImageFileName(null); // Clear Image File Name
             setSelectedImage(null); // Clear selected image
             setImagePreview(null); // Clear image preview
             setSelectedPdf(null); // Clear selected PDF
@@ -670,7 +667,6 @@ function ProjectChat() {
             }
         } catch (err) {
             console.error("Error parsing user data:", err);
-            showAlert('error', 'Error while parsing data!');
         }
     };
 
@@ -818,13 +814,6 @@ function ProjectChat() {
 
     return (
         <div className="project-chat-container">
-            {alert.message && (
-                <CustomAlert
-                    type={alert.type}
-                    message={alert.message}
-                    onClose={() => setAlert({ type: '', message: '' })}
-                />
-            )}
             {/* Sidebar Section */}
             <div className="project-sidebar">
                 <h1 className="project-title">{project.name}</h1>
@@ -1225,7 +1214,7 @@ function ProjectChat() {
                             </button>
                         </div>
                     </form>
-
+                    
                     {/* Delete Confirmation Dialog */}
                     {showDeleteConfirm && (
                         <div className="delete-confirmation-overlay">

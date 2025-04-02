@@ -8,7 +8,8 @@ import {
   HomeIcon,
   ClipboardListIcon,
   UserGroupIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  DocumentIcon
 } from '@heroicons/react/outline';
 import TasksComponent from './TasksComponent';
 import TaskComponent from './TaskComponent';
@@ -17,24 +18,17 @@ import TeamComponent from './TeamComponent';
 import ProfileComponent from './ProfileComponent';
 import NotificationComponent from './NotificationComponent';
 import ProjectsComponent from './ProjectsComponent';
-import CustomAlert from './CustomAlert';
+import DocumentsComponent from './DocumentsComponent';
 import '../Styles/EmployeeDashboard.css';
-import '../Styles/loading.css';
-import '../Styles/CustomAlert.css';
+import '../Styles/loading.css'
 
 const EmployeeDashboard = () => {
-  const [alert, setAlert] = useState({ type: '', message: '' });
   const [tasks, setTasks] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
-
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert({ type: '', message: '' }), 3000);
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -83,7 +77,7 @@ const EmployeeDashboard = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
-        showAlert('error', 'Failed to load data. Please check your connection and try again.');
+        setError('Failed to load data. Please check your connection and try again.');
         setLoading(false);
       }
     };
@@ -94,12 +88,11 @@ const EmployeeDashboard = () => {
 
   // Function to mark a task as complete
   const markTaskComplete = async (taskId) => {
-    console.log(taskId);
     try {
       const token = localStorage.getItem("token");
       console.log(token);
       if (!token) {
-        showAlert("alert", "No token found. Please log in again.");
+        alert("No token found. Please log in again.");
         return;
       }
       // Find the task
@@ -117,9 +110,8 @@ const EmployeeDashboard = () => {
       setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
-      showAlert("success", "Task status changed successfully");
     } catch (err) {
-      showAlert("error", "Error updating task");
+      console.error('Error updating task:', err);
     }
   };
 
@@ -140,7 +132,7 @@ const EmployeeDashboard = () => {
   if (error) {
     return (
       <div className="error-container">
-        {showAlert("error", `${error}`)}
+        <p>{error}</p>
         <button onClick={() => window.location.reload()}>Try Again</button>
       </div>
     );
@@ -149,18 +141,9 @@ const EmployeeDashboard = () => {
   const renderDashboardContent = () => {
     if (loading) {
       return (
-        <div>
-          {alert.message && (
-            <CustomAlert
-              type={alert.type}
-              message={alert.message}
-              onClose={() => setAlert({ type: '', message: '' })}
-            />
-          )}
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading...</p>
-          </div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
         </div>
       );
     }
@@ -273,6 +256,13 @@ const EmployeeDashboard = () => {
             <ProjectsComponent />
           </div>
         );
+      case 'documents':
+        return (
+          <div className='tasks-container'>
+            <h3 className="page-title">Shared Documents</h3>
+            <DocumentsComponent />
+          </div>
+        );
       case 'profile':
         return (
           <div>
@@ -322,6 +312,10 @@ const EmployeeDashboard = () => {
           <li className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
             <UserIcon className="nav-icon" />
             <span>Profile</span>
+          </li>
+          <li className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>
+            <DocumentIcon className="nav-icon" />
+            <span>Documents</span>
           </li>
           <li className={`nav-item ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>
             <ChartBarIcon className="nav-icon" />

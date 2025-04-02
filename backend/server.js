@@ -69,8 +69,8 @@ io.on('connection', (socket) => {
 
   // Send message
   socket.on('sendMessage', async (data) => {
-    const { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl } = data;
-    console.log("Message Received:", { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl });
+    const { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl, imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName } = data;
+    console.log("Message Received:", { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl, imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName });
     try {
       // Save message to database
       const newMessage = new Message({
@@ -80,7 +80,11 @@ io.on('connection', (socket) => {
         imageUrl: imageUrl || null,
         pdfUrl: pdfUrl || null,
         audioUrl: audioUrl || null,
-        videoUrl: videoUrl || null
+        videoUrl: videoUrl || null,
+        imageOriginalName: imageOriginalName || null,
+        pdfOriginalName: pdfOriginalName || null,
+        audioOriginalName: audioOriginalName || null,
+        videoOriginalName: videoOriginalName || null
       });
       await newMessage.save();
 

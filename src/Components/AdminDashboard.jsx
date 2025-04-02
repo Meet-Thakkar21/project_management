@@ -3,11 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import '../Styles/AdminDashboard.css';
 import '../Styles/loading.css';
 import NotificationComponent from './NotificationComponent';
-import CustomAlert from './CustomAlert';
 import axios from 'axios';
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [alert, setAlert] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modalType, setModalType] = useState('');
@@ -37,11 +35,6 @@ const AdminDashboard = () => {
   const [selectedFilterProject, setSelectedFilterProject] = useState("all");
   const [selectedProjStatus, setSelectedProjStatus] = useState("all");
 
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert({ type: '', message: '' }), 3000);
-  };
-
   const projectNames = [...new Set(tasks.map(task => task.project?.name).filter(Boolean))];
 
   // Function to filter tasks
@@ -67,7 +60,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       console.log(token);
       if (!token) {
-        showAlert("alert", "No token found. Please log in again.");
+        alert("No token found. Please log in again.");
         return;
       }
 
@@ -97,7 +90,8 @@ const AdminDashboard = () => {
 
       setProjects(sortedProjects);
     } catch (error) {
-      showAlert("error", "Failed to fetch projects!");
+      console.error("Error fetching projects:", error.response?.data || error);
+      alert("Failed to fetch projects. " + (error.response?.data?.message || ""));
     }
   };
 
@@ -118,7 +112,7 @@ const AdminDashboard = () => {
       console.log(uniqueMembersArray);
       setTeamMembers(uniqueMembersArray);
     } catch (error) {
-      showAlert('error', 'Error fetching team members:', error.response?.data?.message || error.message);
+      console.error('Error fetching team members:', error.response?.data?.message || error.message);
     }
   };
 
@@ -138,7 +132,7 @@ const AdminDashboard = () => {
       setUserProfile(profileResponse.data);
     } catch (error) {
       console.error("Error fetching profile:", error.response?.data || error);
-      showAlert("error", "Failed to fetch Profile Data.");
+      alert("Failed to fetch Profile Data." + (error.response?.data?.message || ""));
     }
   };
 
@@ -150,7 +144,6 @@ const AdminDashboard = () => {
       setTasks(response.data);
       console.log("Tasks: " + response.data)
     } catch (error) {
-      showAlert("error", "Failed to fetch tasks");
       console.error('Error fetching tasks:', error.response?.data?.message || error.message);
     }
   };
@@ -159,7 +152,7 @@ const AdminDashboard = () => {
 
   const handleCreateProject = async () => {
     if (!newProject.name || !newProject.description || newProject.members.length === 0) {
-      showAlert("alert", "Please fill out all fields and select at least one member!");
+      alert("Please fill out all fields and select at least one member!");
       return;
     }
 
@@ -189,7 +182,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error("Error adding project:", error);
-      showAlert("alert", "Failed to add project.");
+      alert("Failed to add project.");
     }
   };
 
@@ -214,7 +207,7 @@ const AdminDashboard = () => {
       setadminId(user.id); // Set adminId
       console.log(adminId);
     } else {
-      showAlert('error', 'User not found in localStorage');
+      console.error('User not found in localStorage');
     }
   }, []);
 
@@ -254,11 +247,9 @@ const AdminDashboard = () => {
 
         setEmail('');
         setRole('');
-        showAlert("success", "Member added successfully!");
       }
     } catch (error) {
-      console.error(error.response?.data?.message || 'Error adding member');
-      showAlert("error", "Failed to add member");
+      alert(error.response?.data?.message || 'Error adding member');
     }
   };
 
@@ -303,17 +294,16 @@ const AdminDashboard = () => {
         setNewTask({ name: "", project: "", assignedTo: "", deadline: "", status: "" });
 
         setShowModal(false);
-        showAlert("success", "Task created successfully!");
       }
     } catch (error) {
       console.error("Error creating task:", error);
-      showAlert("error", "Failed to create task.");
+      alert(error.response?.data?.message || "Failed to create task.");
     }
   };
 
   const updateTask = async () => {
     if (!editingTask || !editingTask._id) {
-      showAlert("alert", "No task selected for update");
+      alert("No task selected for update");
       return;
     }
 
@@ -341,11 +331,10 @@ const AdminDashboard = () => {
         setEditingTask(null);
 
         setShowModal(false);
-        showAlert("success", "Task updated successfully!");
       }
     } catch (error) {
       console.error("Error updating task:", error);
-      showAlert("error", "Failed to update task.");
+      alert(error.response?.data?.message || "Failed to update task.");
     }
   };
 
@@ -370,11 +359,10 @@ const AdminDashboard = () => {
         setTaskToDelete(null);
 
         setShowModal(false);
-        showAlert("success", "Task deleted successfully!");
       }
     } catch (error) {
       console.error("Error deleting task:", error);
-      showAlert("error", "Failed to delete task.");
+      alert(error.response?.data?.message || "Failed to delete task.");
     }
   };
 
@@ -398,11 +386,10 @@ const AdminDashboard = () => {
         setProjectToDelete(null);
 
         setShowModal(false);
-        showAlert("success", "Project removed permanantly!");
       }
     } catch (error) {
-      console.error("Error deleting project:", error);
-      showAlert("error", "Failed to delete project.");
+      console.error("Error deleting task:", error);
+      alert(error.response?.data?.message || "Failed to delete task.");
     }
   };
 
@@ -435,7 +422,7 @@ const AdminDashboard = () => {
         delete newLoadingStatus[memberId];
         return newLoadingStatus;
       });
-      showAlert("error", "Failed to update member status.");
+      alert("Failed to update member status.");
 
     } finally {
       setLoadingStatus(prev => {
@@ -492,31 +479,18 @@ const AdminDashboard = () => {
 
   // Project chat navigation for admin
   const openProjectChat = (projectId) => {
-    setTimeout(() => {
-      setAlert({ type: 'success', message: 'Redirecting to Chat Interface' });
-      navigate(`/projects/${projectId}/chat`); // Navigate after 2 seconds
-    }, 2000);
+    navigate(`/projects/${projectId}/chat`);
   };
 
   const renderDashboardContent = () => {
     if (loading) {
       return (
-        <div>
-          {alert.message && (
-            <CustomAlert
-              type={alert.type}
-              message={alert.message}
-              onClose={() => setAlert({ type: '', message: '' })}
-            />
-          )}
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading...</p>
-          </div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading...</p>
         </div>
       );
     }
-
     switch (activeTab) {
       case 'dashboard':
         return (
