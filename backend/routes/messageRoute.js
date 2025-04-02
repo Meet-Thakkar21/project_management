@@ -70,10 +70,10 @@ const upload = multer({ storage: storage });
 router.post('/upload-image', authMiddleware, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+      return res.status(400).json({ message: 'No image uploaded' });
     }
 
-    // Create the URL for the uploaded file
+    // Create the URL for the uploaded image
     const baseUrl = `${req.protocol}://${req.get('host')}`;
     const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
 
@@ -108,6 +108,48 @@ router.post('/upload-file', authMiddleware, upload.single('file'), async (req, r
   }
 });
 
+// Audio functionality in chat interface
+router.post('/upload-audio', authMiddleware, upload.single('audio'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No audio uploaded' });
+    }
+
+    // Create the URL for the uploaded audio
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const audioUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
+    return res.status(200).json({
+      message: 'Audio uploaded successfully',
+      audioUrl: audioUrl
+    });
+  } catch (error) {
+    console.error('Error uploading audio:', error);
+    return res.status(500).json({ message: 'Error uploading audio' });
+  }
+});
+
+// Video functionality in chat interface
+router.post('/upload-video', authMiddleware, upload.single('video'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No video uploaded' });
+    }
+
+    // Create the URL for the uploaded video
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const videoUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
+    return res.status(200).json({
+      message: 'Video uploaded successfully',
+      videoUrl: videoUrl
+    });
+  } catch (error) {
+    console.error('Error uploading video:', error);
+    return res.status(500).json({ message: 'Error uploading video' });
+  }
+});
+
 // Get messages for a specific project
 router.get('/project/:projectId', authMiddleware, async (req, res) => {
   try {
@@ -119,9 +161,6 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
-    console.log(senderId);
-    console.log("hello");
-    console.log(project.createdBy.toString());
 
     // Ensure user is a member of the project
     if (!project.members.includes(senderId) && project.createdBy.toString() !== senderId.toString()) {
@@ -135,7 +174,7 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
 
     const messages = await Message.find({ project: projectId })
       .populate('sender', 'firstName lastName email')
-      .select('text imageUrl createdAt updatedAt')
+      .select('text imageUrl pdfUrl audioUrl videoUrl createdAt updatedAt')
       .sort({ createdAt: 1 }) // Most recent first
       .skip(skip)
       .limit(limit);
@@ -192,6 +231,32 @@ router.put('/edit/:messageId', authMiddleware, async (req, res) => {
     });
   } catch (error) {
     console.error("Error editing message:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DELETE Route to delete message
+router.delete('/delete/:messageId', authMiddleware, async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const userId = req.user.userId;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Ensure the logged-in user is the sender or Admin who can delete anymessage in the group
+    const project = await Project.findById(message.project);
+    const isAdmin = project.createdBy.toString() === userId;
+    if (message.sender.toString() !== userId && !isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to delete this message' });
+    }
+
+    await Message.findByIdAndDelete(messageId);
+    res.status(200).json({ message: "Message deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting message:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

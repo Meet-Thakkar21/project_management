@@ -14,18 +14,23 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-right: 2px solid #090909;
     overflow-y: auto;
+    background-image: url(../../public/sidebarbg1.jpg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 .project-title {
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 2px solid #090909;
+    border: 2px solid #ffffff;
     border-radius: 25px;
     font-size: 24px;
     font-weight: 700;
     color: #4a6cfa;
     margin-bottom: 20px;
+    padding: 15px 0;
 }
 
 .sidebar-heading {
@@ -33,6 +38,7 @@
     font-weight: 600;
     margin-bottom: 10px;
     text-align: center;
+    color: #ffffff;
 }
 
 .admin-details {
@@ -78,7 +84,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #d5e9fc;
+    background-color: floralwhite;
     width: 100%;
     height: auto;
     /* background-image: url('../../public/chatbg.png'); */
@@ -145,7 +151,7 @@
     padding: 20px;
     overflow-y: auto;
     scrollbar-width: thin;
-    scrollbar-color: #111 transparent;
+    scrollbar-color: dimgrey transparent;
 }
 
 .messages-container::-webkit-scrollbar {
@@ -255,11 +261,11 @@
 /* Message Form */
 .message-form {
     padding: 15px;
-    background-color: #ffffff;
+    background-color: currentColor;
     border-radius: 25px;
-    border-top: 1px solid #555;
+    border-top: 1px solid #ffffff;
     display: flex;
-    
+
 }
 
 .message-input {
@@ -284,14 +290,6 @@
     border: none;
     cursor: pointer;
     margin-left: 10px;
-}
-
-.send-button:disabled {
-    background-color: #ccc;
-}
-
-.send-button:hover {
-    background-color: #6c8cff;
 }
 
 .send-button svg {
@@ -441,6 +439,7 @@
     max-height: 120px;
     overflow-y: auto;
     outline: none;
+    /* scroll-margin: 10px; */
     transition: all 0.3s ease;
 }
 
@@ -456,7 +455,7 @@
     cursor: pointer;
     font-size: 20px;
     padding: 8px;
-    color: #666;
+    color: #fff;
     margin-right: 8px;
     border-radius: 50%;
     display: flex;
@@ -502,7 +501,7 @@
 }
 
 .send-button:disabled {
-    background: #cccccc;
+    background: dimgrey;
     cursor: not-allowed;
 }
 
@@ -514,13 +513,16 @@
 }
 
 /* Image and Pdf button */
-.image-button, .pdf-button {
+.image-button,
+.pdf-button,
+.video-button,
+.audio-button {
     background: none;
     border: none;
     cursor: pointer;
     font-size: 20px;
     padding: 8px;
-    color: #666;
+    color: #fff;
     margin-right: 8px;
     border-radius: 50%;
     display: flex;
@@ -529,12 +531,19 @@
     transition: all 0.2s ease;
 }
 
-.image-button:hover, .pdf-button:hover {
-    color: #4a89dc;
+.image-button:hover,
+.pdf-button:hover,
+.video-button:hover,
+.audio-button:hover {
+    background-color: #f1f1f1;
+    color: #007bff;
 }
 
-/* Image Preview and Pdf Preview */
-.image-preview-container, .pdf-preview-container {
+/* Image Preview-Pdf-Audio-Video Preview */
+.image-preview-container,
+.pdf-preview-container,
+.audio-preview-container,
+.video-preview-container {
     padding: 10px;
     border-top: 1px solid #e0e0e0;
     background-color: #f7fafc;
@@ -583,7 +592,9 @@
     width: 50%;
 }
 
-.pdf-preview-wrapper {
+.pdf-preview-wrapper,
+.audio-preview-wrapper,
+.video-preview-wrapper {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -596,7 +607,17 @@
     color: #4a5568;
 }
 
-.remove-pdf-btn {
+.video-preview,
+.audio-preview {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    gap: 10px;
+}
+
+.remove-pdf-btn,
+.remove-audio-btn,
+.remove-video-btn {
     background: none;
     border: none;
     color: #e53e3e;
@@ -606,6 +627,25 @@
 
 .message-pdf-container {
     margin-top: 8px;
+}
+
+.message-audio-container {
+    margin: 5px 0;
+    min-width: 300px;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.message-video {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+}
+
+.message-audio {
+    width: 100%;
+    border-radius: 8px;
 }
 
 .pdf-link {
@@ -624,6 +664,75 @@
 
 .pdf-link:hover {
     background-color: #e2e8f0;
+}
+
+/* Delete Message */
+.delete-message-btn {
+    opacity: 0;
+    transition: opacity 0.2s;
+    color: #ff5252;
+    background: none;
+    border: 1px solid red;
+    cursor: pointer;
+    padding: 5px;
+    margin-left: 5px;
+    border-radius: 50%;
+}
+
+.message:hover .delete-message-btn {
+    opacity: 1;
+}
+
+/* Delete Confirmation Dialog */
+.delete-confirmation-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.delete-confirmation-dialog {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    max-width: 90%;
+}
+
+.delete-confirmation-dialog p {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.delete-confirmation-actions {
+    display: flex;
+    justify-content: space-around;
+}
+
+.delete-confirm-btn,
+.delete-cancel-btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.delete-confirm-btn {
+    background-color: #ff5252;
+    color: white;
+}
+
+.delete-cancel-btn {
+    background-color: #e0e0e0;
+    color: #333;
 }
 
 /* Message Images */

@@ -6,6 +6,8 @@ const MessageSchema = new mongoose.Schema({
     text: { type: String, trim: true },
     imageUrl: { type: String, default: null },
     pdfUrl: { type: String, default: null },
+    videoUrl: { type: String, default: null },
+    audioUrl: { type: String, default: null },
     readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     updatedAt: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now },

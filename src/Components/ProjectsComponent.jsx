@@ -1,23 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { ClipboardListIcon, UsersIcon } from '@heroicons/react/outline';
+import CustomAlert from './CustomAlert';
+import '../Styles/CustomAlert.css';
 import axios from 'axios';
 import '../Styles/ProjectsComponent.css';
 import '../Styles/loading.css';
 
 const ProjectsComponent = () => {
+    const [alert, setAlert] = useState({ type: '', message: '' });
     const [projects, setProjects] = useState([]);
     const [selectedProject, setSelectedProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const navigate = useNavigate();
-
+    const showAlert = (type, message) => {
+        setAlert({ type, message });
+        setTimeout(() => setAlert({ type: '', message: '' }), 3000);
+    };
     useEffect(() => {
         const fetchProjects = async () => {
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
-                    navigate('/login');
+                    setTimeout(() => {
+                        setAlert({ type: 'error', message: 'No token found. Redirecting you to Login!' });
+                        navigate("/dashboard"); // Navigate after 2 seconds
+                    }, 2000);
                     return;
                 }
 
@@ -30,7 +39,7 @@ const ProjectsComponent = () => {
                 setProjects(response.data);
                 setLoading(false);
             } catch (err) {
-                setError('Failed to fetch projects');
+                showAlert('error', 'Failed to fetch projects');
                 setLoading(false);
                 console.error('Error fetching projects:', err);
             }
@@ -52,13 +61,15 @@ const ProjectsComponent = () => {
             setSelectedProject(response.data);
         } catch (err) {
             console.error('Error fetching project details:', err);
-            setError('Failed to fetch project details');
+            showAlert('error', 'Failed to fetch project details');
         }
     };
 
     const handleStartChat = (projectId) => {
-        // Navigate to project-specific chat
-        navigate(`/projects/${projectId}/chat`);
+        setTimeout(() => {
+            setAlert({ type: 'success', message: 'Redirecting to Chat Interface' });
+            navigate(`/projects/${projectId}/chat`); // Navigate after 2 seconds
+        }, 2000);
     };
 
     const closeProjectDetails = () => {
@@ -73,10 +84,17 @@ const ProjectsComponent = () => {
             </div>
         );
     }
-    if (error) return <div className="error">{error}</div>;
+    if (error) return <div className="error">{showAlert("error",`${error}`)}</div>;
 
     return (
         <div className="projects-container">
+            {alert.message && (
+                <CustomAlert
+                    type={alert.type}
+                    message={alert.message}
+                    onClose={() => setAlert({ type: '', message: '' })}
+                />
+            )}
             <div className="projects-grid">
                 {projects.map(project => (
                     <div

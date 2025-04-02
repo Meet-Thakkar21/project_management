@@ -17,16 +17,24 @@ import TeamComponent from './TeamComponent';
 import ProfileComponent from './ProfileComponent';
 import NotificationComponent from './NotificationComponent';
 import ProjectsComponent from './ProjectsComponent';
+import CustomAlert from './CustomAlert';
 import '../Styles/EmployeeDashboard.css';
-import '../Styles/loading.css'
+import '../Styles/loading.css';
+import '../Styles/CustomAlert.css';
 
 const EmployeeDashboard = () => {
+  const [alert, setAlert] = useState({ type: '', message: '' });
   const [tasks, setTasks] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert({ type: '', message: '' }), 3000);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,7 +83,7 @@ const EmployeeDashboard = () => {
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to load data. Please check your connection and try again.');
+        showAlert('error', 'Failed to load data. Please check your connection and try again.');
         setLoading(false);
       }
     };
@@ -91,7 +99,7 @@ const EmployeeDashboard = () => {
       const token = localStorage.getItem("token");
       console.log(token);
       if (!token) {
-        alert("No token found. Please log in again.");
+        showAlert("alert", "No token found. Please log in again.");
         return;
       }
       // Find the task
@@ -109,8 +117,9 @@ const EmployeeDashboard = () => {
       setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
+      showAlert("success", "Task status changed successfully");
     } catch (err) {
-      console.error('Error updating task:', err);
+      showAlert("error", "Error updating task");
     }
   };
 
@@ -131,7 +140,7 @@ const EmployeeDashboard = () => {
   if (error) {
     return (
       <div className="error-container">
-        <p>{error}</p>
+        {showAlert("error", `${error}`)}
         <button onClick={() => window.location.reload()}>Try Again</button>
       </div>
     );
@@ -140,9 +149,18 @@ const EmployeeDashboard = () => {
   const renderDashboardContent = () => {
     if (loading) {
       return (
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading...</p>
+        <div>
+          {alert.message && (
+            <CustomAlert
+              type={alert.type}
+              message={alert.message}
+              onClose={() => setAlert({ type: '', message: '' })}
+            />
+          )}
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading...</p>
+          </div>
         </div>
       );
     }

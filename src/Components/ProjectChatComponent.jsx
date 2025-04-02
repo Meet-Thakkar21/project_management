@@ -3,9 +3,10 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import axios from 'axios';
 import '../Styles/ProjectChat.css';
-import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCheck, BiFile } from 'react-icons/bi'; // Added BiImage for image upload
+import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCheck, BiFile, BiVideo, BiMicrophone, BiTrash } from 'react-icons/bi'; // Added BiImage for image upload
 import EmojiPicker from 'emoji-picker-react';
 import moment from 'moment';
+import CustomAlert from './CustomAlert';
 
 // Connect to the socket server
 const socket = io("http://localhost:5000", {
@@ -23,6 +24,7 @@ socket.on("connect_error", (err) => {
 });
 
 function ProjectChat() {
+    const [alert, setAlert] = useState({ type: '', message: '' });
     const { projectId } = useParams();
     const [project, setProject] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -39,10 +41,16 @@ function ProjectChat() {
     const [imagePreview, setImagePreview] = useState(null);
     const [selectedPdf, setSelectedPdf] = useState(null);
     const [pdfPreview, setPdfPreview] = useState(null);
+    const [selectedAudio, setSelectedAudio] = useState(null);
+    const [audioPreview, setAudioPreview] = useState(null);
+    const [selectedVideo, setSelectedVideo] = useState(null);
+    const [videoPreview, setVideoPreview] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
 
     const [editingMessageId, setEditingMessageId] = useState(null);
     const [editMessageText, setEditMessageText] = useState('');
+    const [deletingMessageId, setDeletingMessageId] = useState(null);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
     const messagesEndRef = useRef(null);
@@ -52,8 +60,15 @@ function ProjectChat() {
     const emojiPickerRef = useRef(null);
     const imageInputRef = useRef(null);
     const pdfInputRef = useRef(null);
+    const audioInputRef = useRef(null);
+    const videoInputRef = useRef(null);
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
+
+    const showAlert = (type, message) => {
+        setAlert({ type, message });
+        setTimeout(() => setAlert({ type: '', message: '' }), 3000);
+    };
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -72,6 +87,7 @@ function ProjectChat() {
             socket.emit("joinRoom", { projectId, userId: userObj.id });
         } catch (err) {
             console.error("Error parsing user data:", err);
+            showAlert("error", "Error while parsing your data !");
             navigate('/login');
             return;
         }
@@ -93,6 +109,14 @@ function ProjectChat() {
             );
         });
 
+        // Listen for message deletions
+        socket.on("messageDeleted", (deletedMessageId) => {
+            console.log("Message deleted:", deletedMessageId);
+            setMessages((prevMessages) =>
+                prevMessages.filter(msg => msg._id !== deletedMessageId)
+            );
+        });
+
         return () => {
             // Clean up on component unmount
             if (currentUser) {
@@ -100,6 +124,7 @@ function ProjectChat() {
             }
             socket.off("receiveMessage");
             socket.off("messageUpdated");
+            socket.off("messafeDeleted");
         };
     }, [projectId, navigate]);
 
@@ -155,13 +180,15 @@ function ProjectChat() {
             setIsLoadingMore(false);
         } catch (err) {
             console.error('Error fetching project details:', err);
-            setError('Failed to fetch project details');
+            // setError('Failed to fetch project details');
+            showAlert("error", "Failed to fetch project details!");
             setIsLoadingMore(false);
         }
     };
 
     useEffect(() => {
         fetchProjectDetails();
+        // console.log("Messsages after loading..\n", messages);
     }, [projectId, pagination.currentPage, navigate]);
 
     // Check if a message is within the 15-minute edit window
@@ -191,6 +218,57 @@ function ProjectChat() {
         setEditingMessageId(null);
         setEditMessageText('');
         setIsEditing(false);
+    };
+
+    // Show delete confirmation dialog
+    const confirmDeleteMessage = (messageId) => {
+        setDeletingMessageId(messageId);
+        setShowDeleteConfirm(true);
+    };
+
+    // Cancel message deletion
+    const cancelDeleteMessage = () => {
+        setDeletingMessageId(null);
+        setShowDeleteConfirm(false);
+    };
+
+    // Delete message
+    const deleteMessage = async () => {
+        if (!deletingMessageId) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(
+                `http://localhost:5000/api/chat/delete/${deletingMessageId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            // Update local message state
+            setMessages(prevMessages =>
+                prevMessages.filter(msg => msg._id !== deletingMessageId)
+            );
+
+            socket.emit("deleteMessage", {
+                messageId: deletingMessageId,
+                projectId
+            });
+
+            setShowDeleteConfirm(false);
+            setDeletingMessageId(null);
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            if (error.response && error.response.status === 403) {
+                showAlert("alert", `${error.response.data.message}`);
+            } else {
+                showAlert("alert", "Error deleting message!");
+            }
+            setShowDeleteConfirm(false);
+            setDeletingMessageId(null);
+        }
     };
 
     // Save edited message
@@ -234,9 +312,9 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error editing message:', error);
             if (error.response && error.response.status === 403) {
-                alert(error.response.data.message);
+                showAlert("alert", `${error.response.data.message}`);
             } else {
-                alert('Error editing message');
+                showAlert("alert", "Error editing message");
             }
         }
     };
@@ -267,11 +345,11 @@ function ProjectChat() {
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
-            alert('File size should not exceed 5MB');
+            showAlert('alert', 'File size should not exceed 100MB');
             return;
         }
         if (!file.type.match('image.*')) {
-            alert('Please select an image file');
+            showAlert('alert', 'Please select an image file');
             return;
         }
         setSelectedImage(file);
@@ -289,16 +367,54 @@ function ProjectChat() {
 
         // Check file size (limit to 100MB)
         if (file.size > 100 * 1024 * 1024) {
-            alert('File size should not exceed 5MB');
+            showAlert('alert', 'File size should not exceed 100MB');
             return;
         }
         if (file.type !== 'application/pdf') {
-            alert('Please select a PDF file');
+            showAlert('alert', 'Please select a PDF file');
             return;
         }
 
         setSelectedPdf(file);
         setPdfPreview(file.name);
+    };
+
+    // Handle Audio file selection
+    const handleAudioChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check file size (limit to 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            showAlert('alert', 'File size should not exceed 100MB');
+            return;
+        }
+        if (!file.type.match('audio.*')) {
+            showAlert('alert', 'Please select a Audio file');
+            return;
+        }
+
+        setSelectedAudio(file);
+        setAudioPreview(file.name);
+    };
+
+    // Handle Video file selection
+    const handleVideoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Check file size (limit to 100MB)
+        if (file.size > 100 * 1024 * 1024) {
+            showAlert('alert', 'File size should not exceed 100MB');
+            return;
+        }
+        if (!file.type.match('video.*')) {
+            showAlert('alert', 'Please select a Video file');
+            return;
+        }
+
+        setSelectedVideo(file);
+        setVideoPreview(file.name);
     };
 
     // Remove selected image
@@ -311,7 +427,7 @@ function ProjectChat() {
     };
 
     // Remove selected PDF
-    const removePdf = () => {
+    const removeSelectedPdf = () => {
         setSelectedPdf(null);
         setPdfPreview(null);
         if (pdfInputRef.current) {
@@ -319,6 +435,23 @@ function ProjectChat() {
         }
     };
 
+    // Remove selected audio
+    const removeSelectedAudio = () => {
+        setSelectedAudio(null);
+        setAudioPreview(null);
+        if (audioInputRef.current) {
+            audioInputRef.current.value = '';
+        }
+    };
+
+    // Remove selected video
+    const removeSelectedVideo = () => {
+        setSelectedVideo(null);
+        setVideoPreview(null);
+        if (videoInputRef.current) {
+            videoInputRef.current.value = '';
+        }
+    };
 
     // Upload image to server
     const uploadImage = async () => {
@@ -346,7 +479,7 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error uploading image:', error);
             setIsUploading(false);
-            alert('Failed to upload image');
+            showAlert('alert', 'Failed to upload image');
             return null;
         }
     };
@@ -378,7 +511,68 @@ function ProjectChat() {
         } catch (error) {
             console.error('Error uploading PDF:', error);
             setIsUploading(false);
-            alert('Failed to upload PDF');
+            showAlert('alert', 'Failed to upload PDF');
+            return null;
+        }
+    };
+
+    // Add upload functions
+    const uploadAudio = async () => {
+        if (!selectedAudio) return null;
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('audio', selectedAudio);
+        formData.append('projectId', projectId);
+        formData.append('fileType', 'audio');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                'http://localhost:5000/api/chat/upload-audio',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+            setIsUploading(false);
+            return response.data.audioUrl;
+        } catch (error) {
+            console.error('Error uploading audio:', error);
+            setIsUploading(false);
+            showAlert('alert', 'Failed to upload audio');
+            return null;
+        }
+    };
+
+    const uploadVideo = async () => {
+        if (!selectedVideo) return null;
+        setIsUploading(true);
+        const formData = new FormData();
+        formData.append('video', selectedVideo);
+        formData.append('projectId', projectId);
+        formData.append('fileType', 'video');
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.post(
+                'http://localhost:5000/api/chat/upload-video',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+            setIsUploading(false);
+            return response.data.videoUrl;
+        } catch (error) {
+            console.error('Error uploading video:', error);
+            setIsUploading(false);
+            showAlert('alert', 'Failed to upload video');
             return null;
         }
     };
@@ -386,10 +580,23 @@ function ProjectChat() {
     // Send message using WebSocket
     const handleSendMessage = async (e) => {
         e.preventDefault();
-        if (!newMessage.trim() && !selectedImage && !selectedPdf) return;
+        if (!newMessage.trim() && !selectedImage && !selectedPdf && !selectedAudio && !selectedVideo) return;
 
         let imageUrl = null;
         let pdfUrl = null;
+        let audioUrl = null;
+        let videoUrl = null;
+
+        // If all upload attempts failed and there's no text message, return
+        if (!newMessage.trim() &&
+            ((selectedImage && !imageUrl) &&
+                (selectedPdf && !pdfUrl) &&
+                (selectedAudio && !audioUrl) &&
+                (selectedVideo && !videoUrl))) {
+            console.log("Upload failed");
+            showAlert('alert', 'Upload Failed.Try sometime later');
+            return;
+        }
 
         if (selectedImage) {
             imageUrl = await uploadImage();
@@ -399,8 +606,19 @@ function ProjectChat() {
             pdfUrl = await uploadPdf();
         }
 
+        if (selectedAudio) {
+            audioUrl = await uploadAudio();
+        }
+
+        if (selectedVideo) {
+            videoUrl = await uploadVideo();
+        }
+
         // If there was an image but upload failed, and there's no text, stop
-        if (!newMessage.trim() && ((selectedImage && !imageUrl) || (selectedPdf && !pdfUrl))) return;
+        if (!newMessage.trim() && ((selectedImage && !imageUrl) || (selectedPdf && !pdfUrl) || (selectedAudio && !audioUrl) || (selectedVideo && !videoUrl))) {
+            console.log("Stucked");
+            return;
+        }
 
         const userString = localStorage.getItem('user');
         try {
@@ -412,7 +630,9 @@ function ProjectChat() {
                 senderId,
                 text: newMessage.trim(),
                 imageUrl: imageUrl,
-                pdfUrl: pdfUrl
+                pdfUrl: pdfUrl,
+                audioUrl: audioUrl,
+                videoUrl: videoUrl
             };
 
             console.log("Sending Message:", messageData);
@@ -425,6 +645,10 @@ function ProjectChat() {
             setImagePreview(null); // Clear image preview
             setSelectedPdf(null); // Clear selected PDF
             setPdfPreview(null); // Clear PDF preview
+            setSelectedVideo(null); // Clear selected video
+            setVideoPreview(null); // Clear video preview
+            setSelectedAudio(null); // Clear selected audio
+            setAudioPreview(null); // Clear audio preview
 
             // Reset textarea height
             if (textareaRef.current) {
@@ -438,8 +662,15 @@ function ProjectChat() {
             if (pdfInputRef.current) {
                 pdfInputRef.current.value = '';
             }
+            if (audioInputRef.current) {
+                audioInputRef.current.value = '';
+            }
+            if (videoInputRef.current) {
+                videoInputRef.current.value = '';
+            }
         } catch (err) {
             console.error("Error parsing user data:", err);
+            showAlert('error', 'Error while parsing data!');
         }
     };
 
@@ -558,6 +789,14 @@ function ProjectChat() {
         pdfInputRef.current?.click();
     };
 
+    const handleAudioButtonClick = () => {
+        audioInputRef.current?.click();
+    };
+
+    const handleVideoButtonClick = () => {
+        videoInputRef.current?.click();
+    };
+
     if (loading) {
         return (
             <div className="loading-container">
@@ -579,6 +818,13 @@ function ProjectChat() {
 
     return (
         <div className="project-chat-container">
+            {alert.message && (
+                <CustomAlert
+                    type={alert.type}
+                    message={alert.message}
+                    onClose={() => setAlert({ type: '', message: '' })}
+                />
+            )}
             {/* Sidebar Section */}
             <div className="project-sidebar">
                 <h1 className="project-title">{project.name}</h1>
@@ -587,10 +833,10 @@ function ProjectChat() {
                     {project.members && project.members.length > 0 ? (
                         project.members.map((member) => (
                             <li key={member._id} className="member-item">
-                                    <span className="member-name">
-                                        {member.firstName} {member.lastName}
-                                    </span>
-                                    <span className="member-email">{member.email}</span>
+                                <span className="member-name">
+                                    {member.firstName} {member.lastName}
+                                </span>
+                                <span className="member-email">{member.email}</span>
                             </li>
                         ))
                     ) : (
@@ -746,6 +992,31 @@ function ProjectChat() {
                                                                     </div>
                                                                 )}
 
+                                                                {message.audioUrl && (
+                                                                    <div className="message-audio-container">
+                                                                        <audio
+                                                                            controls
+                                                                            className="message-audio"
+                                                                        >
+                                                                            <source src={message.audioUrl} type="audio/mpeg" />
+                                                                            Your browser does not support the audio tag.
+                                                                        </audio>
+                                                                    </div>
+                                                                )}
+
+                                                                {message.videoUrl && (
+                                                                    <div className="message-video-container">
+                                                                        <video
+                                                                            controls
+                                                                            className="message-video"
+                                                                            preload="metadata"
+                                                                        >
+                                                                            <source src={message.videoUrl} type="video/mp4" />
+                                                                            Your browser does not support the video tag.
+                                                                        </video>
+                                                                    </div>
+                                                                )}
+
                                                                 <div className="message-footer">
                                                                     <div className="message-time">
                                                                         {new Date(message.updatedAt).toLocaleTimeString([], {
@@ -764,6 +1035,15 @@ function ProjectChat() {
                                                                             <BiPencil />
                                                                         </button>
                                                                     )}
+                                                                    {
+                                                                        <button
+                                                                            className="delete-message-btn"
+                                                                            onClick={() => confirmDeleteMessage(message._id)}
+                                                                            title="Delete message"
+                                                                        >
+                                                                            <BiTrash />
+                                                                        </button>
+                                                                    }
                                                                 </div>
                                                             </>
                                                         )}
@@ -803,7 +1083,41 @@ function ProjectChat() {
                                 </div>
                                 <button
                                     className="remove-pdf-btn"
-                                    onClick={removePdf}
+                                    onClick={removeSelectedPdf}
+                                >
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {audioPreview && (
+                        <div className="audio-preview-container">
+                            <div className="audio-preview-wrapper">
+                                <div className="audio-preview">
+                                    <BiMicrophone size={24} />
+                                    <span>{audioPreview}</span>
+                                </div>
+                                <button
+                                    className="remove-audio-btn"
+                                    onClick={removeSelectedAudio}
+                                >
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {videoPreview && (
+                        <div className="video-preview-container">
+                            <div className="video-preview-wrapper">
+                                <div className="video-preview">
+                                    <BiVideo size={24} />
+                                    <span>{videoPreview}</span>
+                                </div>
+                                <button
+                                    className="remove-video-btn"
+                                    onClick={removeSelectedVideo}
                                 >
                                     &times;
                                 </button>
@@ -837,6 +1151,22 @@ function ProjectChat() {
                                 <BiFile />
                             </button>
 
+                            <button
+                                type="button"
+                                className="audio-button"
+                                onClick={handleAudioButtonClick}
+                            >
+                                <BiMicrophone />
+                            </button>
+
+                            <button
+                                type="button"
+                                className="video-button"
+                                onClick={handleVideoButtonClick}
+                            >
+                                <BiVideo />
+                            </button>
+
                             {/* Hidden file input */}
                             <input
                                 type="file"
@@ -851,6 +1181,22 @@ function ProjectChat() {
                                 ref={pdfInputRef}
                                 onChange={handlePdfChange}
                                 accept="application/pdf"
+                                style={{ display: 'none' }}
+                            />
+
+                            <input
+                                type="file"
+                                ref={audioInputRef}
+                                onChange={handleAudioChange}
+                                accept="audio/*"
+                                style={{ display: 'none' }}
+                            />
+
+                            <input
+                                type="file"
+                                ref={videoInputRef}
+                                onChange={handleVideoChange}
+                                accept="video/*"
                                 style={{ display: 'none' }}
                             />
 
@@ -873,12 +1219,35 @@ function ProjectChat() {
                             <button
                                 type="submit"
                                 className="send-button"
-                                disabled={(!newMessage.trim() && !selectedImage) || isUploading}
+                                disabled={(!newMessage.trim() && !selectedImage && !selectedPdf && !selectedAudio && !selectedVideo) || isUploading}
                             >
                                 {isUploading ? <BiLoaderAlt className="spin" /> : <BiSend />}
                             </button>
                         </div>
                     </form>
+
+                    {/* Delete Confirmation Dialog */}
+                    {showDeleteConfirm && (
+                        <div className="delete-confirmation-overlay">
+                            <div className="delete-confirmation-dialog">
+                                <p>Are you sure you want to delete this message?</p>
+                                <div className="delete-confirmation-actions">
+                                    <button
+                                        className="delete-confirm-btn"
+                                        onClick={deleteMessage}
+                                    >
+                                        Delete
+                                    </button>
+                                    <button
+                                        className="delete-cancel-btn"
+                                        onClick={cancelDeleteMessage}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

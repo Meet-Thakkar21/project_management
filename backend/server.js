@@ -69,8 +69,8 @@ io.on('connection', (socket) => {
 
   // Send message
   socket.on('sendMessage', async (data) => {
-    const { projectId, senderId, text, imageUrl, pdfUrl } = data;
-    console.log("Message Received:", { projectId, senderId, text, imageUrl, pdfUrl });
+    const { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl } = data;
+    console.log("Message Received:", { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl });
     try {
       // Save message to database
       const newMessage = new Message({
@@ -78,7 +78,9 @@ io.on('connection', (socket) => {
         sender: senderId,
         text: text || '',
         imageUrl: imageUrl || null,
-        pdfUrl: pdfUrl || null
+        pdfUrl: pdfUrl || null,
+        audioUrl: audioUrl || null,
+        videoUrl: videoUrl || null
       });
       await newMessage.save();
 
@@ -101,6 +103,8 @@ io.on('connection', (socket) => {
           text: newMessage.text,
           imageUrl: newMessage.imageUrl,
           pdfUrl: newMessage.pdfUrl,
+          audioUrl: newMessage.audioUrl,
+          videoUrl: newMessage.videoUrl,
           sender: { _id: sender._id, firstName: sender.firstName, lastName: sender.lastName },
           createdAt: newMessage.createdAt,
           updatedAt: newMessage.createdAt
@@ -135,6 +139,24 @@ io.on('connection', (socket) => {
 
     } catch (error) {
       console.error('Error updating message:', error);
+    }
+  });
+
+  // Delete message event handler
+  socket.on('deleteMessage', async (data) => {
+    try {
+      const { messageId, projectId } = data;
+      if (!messageId || !projectId) {
+        console.error('Missing required fields for message deletion');
+        return;
+      }
+
+      // Broadcast to all clients in the project room that a message has been deleted
+      io.to(projectId).emit('messageDeleted', messageId);
+      // console.log(`Broadcast message deletion: ${messageId} to project ${projectId}`);
+
+    } catch (error) {
+      console.error('Error in deleteMessage socket event:', error);
     }
   });
 
