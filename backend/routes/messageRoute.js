@@ -174,7 +174,7 @@ router.get('/project/:projectId', authMiddleware, async (req, res) => {
 
     const messages = await Message.find({ project: projectId })
       .populate('sender', 'firstName lastName email')
-      .select('text imageUrl pdfUrl audioUrl videoUrl createdAt updatedAt')
+      .select('text imageUrl pdfUrl audioUrl videoUrl createdAt updatedAt readBy')
       .sort({ createdAt: 1 }) // Most recent first
       .skip(skip)
       .limit(limit);

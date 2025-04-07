@@ -1,5 +1,4 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Authentication/Login';
@@ -9,6 +8,7 @@ import Home from './Components/Home';
 import AdminDashboard from './Components/AdminDashboard';
 import EmployeeDashboard from './Components/EmployeeDashboard';
 import ProjectChat from './Components/ProjectChatComponent';
+import ToastContainer from './Components/ToastContainer';
 
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
 /*************  ✨ Codeium Command ⭐  *************/
@@ -22,6 +22,7 @@ const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleuserc
   return (
     <GoogleOAuthProvider clientId={clientId}>
       <Router>
+        <ToastContainer />
         <Routes>
           <Route path = "/" element = {<Home />}/>
           <Route path="/login" element={<Login />} />

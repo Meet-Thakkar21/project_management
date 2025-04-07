@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { DocumentIcon, PhotographIcon, FilmIcon, MusicNoteIcon } from '@heroicons/react/outline';
 import '../Styles/DocumentsComponent.css';
@@ -8,6 +8,13 @@ const DocumentsComponent = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [filter, setFilter] = useState('all');
+    const loadToastShown = useRef(false);
+
+    const showToast = (message, type) => {
+        if (window.showToast) {
+            window.showToast(message, type);
+        }
+    };
 
     useEffect(() => {
         const fetchDocuments = async () => {
@@ -16,7 +23,7 @@ const DocumentsComponent = () => {
                 const token = localStorage.getItem("token");
 
                 if (!token) {
-                    alert("No token found. Please log in again.");
+                    showToast("No token found. Please log in again.", "error");
                     return;
                 }
 
@@ -28,9 +35,15 @@ const DocumentsComponent = () => {
 
                 setDocuments(response.data);
                 setLoading(false);
+                // Only show the success toast if we haven't shown it yet
+                if (!loadToastShown.current) {
+                    showToast(`${response.data.length} documents loaded successfully`, "success");
+                    loadToastShown.current = true;
+                }
             } catch (err) {
                 console.error('Error fetching documents:', err);
                 setError('Failed to load documents. Please check your connection and try again.');
+                showToast("Failed to load documents. Please try again.", "error");
                 setLoading(false);
             }
         };
@@ -62,6 +75,22 @@ const DocumentsComponent = () => {
     //     return 'unknown';
     // };
 
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        const filterNames = {
+            'all': 'All Documents',
+            'image': 'Images',
+            'pdf': 'PDFs',
+            'video': 'Videos',
+            'audio': 'Audio Files'
+        };
+        showToast(`Showing ${filterNames[newFilter]}`, "info");
+    };
+
+    const handleViewDocument = (doc) => {
+        showToast(`Opening ${doc.fileName || 'document'}`, "success");
+    };
+
     const filteredDocuments = filter === 'all'
         ? documents
         : documents.filter(doc => {
@@ -82,7 +111,10 @@ const DocumentsComponent = () => {
         return (
             <div className="error-container">
                 <p>{error}</p>
-                <button onClick={() => window.location.reload()}>Try Again</button>
+                <button onClick={() => {
+                    window.location.reload();
+                    showToast("Attempting to reload documents...", "alert");
+                }}>Try Again</button>
             </div>
         );
     }
@@ -92,31 +124,31 @@ const DocumentsComponent = () => {
             <div className="filter-section">
                 <button
                     className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-                    onClick={() => setFilter('all')}
+                    onClick={() => handleFilterChange('all')}
                 >
                     All
                 </button>
                 <button
                     className={`filter-btn ${filter === 'image' ? 'active' : ''}`}
-                    onClick={() => setFilter('image')}
+                    onClick={() => handleFilterChange('image')}
                 >
                     Images
                 </button>
                 <button
                     className={`filter-btn ${filter === 'pdf' ? 'active' : ''}`}
-                    onClick={() => setFilter('pdf')}
+                    onClick={() => handleFilterChange('pdf')}
                 >
                     PDFs
                 </button>
                 <button
                     className={`filter-btn ${filter === 'video' ? 'active' : ''}`}
-                    onClick={() => setFilter('video')}
+                    onClick={() => handleFilterChange('video')}
                 >
                     Videos
                 </button>
                 <button
                     className={`filter-btn ${filter === 'audio' ? 'active' : ''}`}
-                    onClick={() => setFilter('audio')}
+                    onClick={() => handleFilterChange('audio')}
                 >
                     Audio
                 </button>
@@ -153,6 +185,7 @@ const DocumentsComponent = () => {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="view-document-btn"
+                                        onClick={() => handleViewDocument(doc)}
                                     >
                                         View Document
                                     </a>

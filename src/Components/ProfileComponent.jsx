@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { PencilIcon, UserIcon } from '@heroicons/react/outline';
 import '../Styles/ProfileComponent.css';
+import ToastContainer from './ToastContainer';
 
 const defaultProfileImage = "https://ui-avatars.com/api/?name=U&background=random";
 
@@ -21,6 +22,13 @@ const ProfileComponent = () => {
         gender: '',
         skills: []
     });
+    const loadToastShown = useRef(false);
+
+    const showToast = (message, type) => {
+        if (window.showToast) {
+            window.showToast(message, type);
+        }
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -29,8 +37,8 @@ const ProfileComponent = () => {
                 const token = localStorage.getItem("token");
 
                 if (!token) {
-                    setError("No token found. Please log in again.");
                     setLoading(false);
+                    showToast("No token found. Please log in again.", "error");
                     return;
                 }
 
@@ -42,17 +50,22 @@ const ProfileComponent = () => {
 
                 setUserProfile(response.data);
                 setFormData({
-                    firstName: response.data.firstName || '',
-                    lastName: response.data.lastName || '',
-                    email: response.data.email || '',
+                    firstName: response.data.firstName,
+                    lastName: response.data.lastName,
+                    email: response.data.email,
                     dob: response.data.dob ? new Date(response.data.dob).toISOString().split('T')[0] : '',
-                    gender: response.data.gender || '',
+                    gender: response.data.gender,
                     skills: response.data.skills || []
                 });
                 setLoading(false);
+                if (!loadToastShown.current) {
+                    showToast("Profile Data loaded.", "success");
+                    loadToastShown.current = true;
+                }
+                
             } catch (err) {
                 console.error('Error fetching profile:', err);
-                setError('Failed to load profile data. Please try again later.');
+                showToast("Failed to load Profile data.", "error");
                 setLoading(false);
             }
         };
@@ -60,16 +73,15 @@ const ProfileComponent = () => {
         fetchProfile();
     }, []);
 
-    // Auto-hide success and error messages after 3 seconds
     useEffect(() => {
-        let timer;
-        if (updateSuccess || updateError) {
-            timer = setTimeout(() => {
-                setUpdateSuccess(false);
-                setUpdateError(null);
-            }, 3000);
+        if (updateSuccess) {
+            showToast('Profile updated successfully!', "success");
+            setUpdateSuccess(false);
         }
-        return () => clearTimeout(timer);
+        if (updateError) {
+            showToast(updateError, "error");
+            setUpdateError(null);
+        }
     }, [updateSuccess, updateError]);
 
     const handleInputChange = (e) => {
@@ -96,10 +108,13 @@ const ProfileComponent = () => {
         e.preventDefault();
         setUpdateError(null);
         setUpdateSuccess(false);
-
+        
         try {
             const token = localStorage.getItem("token");
-
+            if (!formData.dob || !formData.email || !formData.firstName || !formData.lastName || !formData.gender) {
+                setUpdateError("Some fields are empty. Please Fill it.");
+                return;
+            }
             if (!token) {
                 setUpdateError("No token found. Please log in again.");
                 return;
@@ -156,6 +171,7 @@ const ProfileComponent = () => {
 
     return (
         <div className="profile-container">
+            <ToastContainer />
             <div className="profile-header">
                 <button
                     className="edit-button"
@@ -165,18 +181,6 @@ const ProfileComponent = () => {
                     {editing ? 'Cancel' : 'Edit Profile'}
                 </button>
             </div>
-
-            {updateError && (
-                <div className="error-message">
-                    <p>{updateError}</p>
-                </div>
-            )}
-
-            {updateSuccess && (
-                <div className="success-message">
-                    <p>Profile updated successfully!</p>
-                </div>
-            )}
 
             <div className="profile-content">
                 <div className="profile-image-section">

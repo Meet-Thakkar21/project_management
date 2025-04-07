@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../Styles/AdminDashboard.css';
 import '../Styles/loading.css';
 import NotificationComponent from './NotificationComponent';
+import ToastContainer from './ToastContainer';
 import axios from 'axios';
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -37,6 +38,13 @@ const AdminDashboard = () => {
 
   const projectNames = [...new Set(tasks.map(task => task.project?.name).filter(Boolean))];
 
+  const loadToastShown = useRef(false);
+
+  const showToast = (message, type) => {
+    if (window.showToast) {
+      window.showToast(message, type);
+    }
+  };
   // Function to filter tasks
   const filteredTasks = tasks.filter(task => {
     const matchesProject = selectedFilterProject === "all" || task.project?.name === selectedFilterProject;
@@ -60,7 +68,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       console.log(token);
       if (!token) {
-        alert("No token found. Please log in again.");
+        showToast("No token found. Please log in again.", "error");
         return;
       }
 
@@ -91,7 +99,7 @@ const AdminDashboard = () => {
       setProjects(sortedProjects);
     } catch (error) {
       console.error("Error fetching projects:", error.response?.data || error);
-      alert("Failed to fetch projects. " + (error.response?.data?.message || ""));
+      showToast("Failed to fetch projects. ", "error");
     }
   };
 
@@ -121,7 +129,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       console.log(token);
       if (!token) {
-        alert("No token found. Please log in again.");
+        showToast("No token found. Please log in again.", "error");
         return;
       }
       const profileResponse = await axios.get("http://localhost:5000/api/employee/profile", {
@@ -132,7 +140,7 @@ const AdminDashboard = () => {
       setUserProfile(profileResponse.data);
     } catch (error) {
       console.error("Error fetching profile:", error.response?.data || error);
-      alert("Failed to fetch Profile Data." + (error.response?.data?.message || ""));
+      showToast("Failed to fetch profile data.", "error");
     }
   };
 
@@ -147,12 +155,13 @@ const AdminDashboard = () => {
       console.error('Error fetching tasks:', error.response?.data?.message || error.message);
     }
   };
+
   const completedTasks = tasks.filter(task => task.status === "completed").length;
   const pendingTasks = tasks.filter(task => task.status === "pending").length;
 
   const handleCreateProject = async () => {
     if (!newProject.name || !newProject.description || newProject.members.length === 0) {
-      alert("Please fill out all fields and select at least one member!");
+      showToast("Please fill out all fields and select at least one member!", "alert");
       return;
     }
 
@@ -179,10 +188,11 @@ const AdminDashboard = () => {
         setProjects([...projects, response.data.project]);
         setNewProject({ name: "", description: "", members: [] });
         setShowModal(false);
+        showToast("New Project created successfully !.", "success");
       }
     } catch (error) {
       console.error("Error adding project:", error);
-      alert("Failed to add project.");
+      showToast("Failed to create New Project.", "error");
     }
   };
 
@@ -208,6 +218,7 @@ const AdminDashboard = () => {
       console.log(adminId);
     } else {
       console.error('User not found in localStorage');
+      showToast("No user found. Please login again !", "error");
     }
   }, []);
 
@@ -218,6 +229,10 @@ const AdminDashboard = () => {
       fetchTeamMembers();
       fetchUserProfile();
       fetchTasks();
+      if (!loadToastShown.current) {
+        showToast("Dashboard loaded successfully!", "success");
+        loadToastShown.current = true;
+      }
     }
   }, [adminId]);
 
@@ -247,9 +262,11 @@ const AdminDashboard = () => {
 
         setEmail('');
         setRole('');
+        showToast("Member added successfully. ", "success");
       }
     } catch (error) {
       alert(error.response?.data?.message || 'Error adding member');
+      showToast("Failed to add member.", "error");
     }
   };
 
@@ -294,16 +311,17 @@ const AdminDashboard = () => {
         setNewTask({ name: "", project: "", assignedTo: "", deadline: "", status: "" });
 
         setShowModal(false);
+        showToast("Task created successfully.", "error");
       }
     } catch (error) {
       console.error("Error creating task:", error);
-      alert(error.response?.data?.message || "Failed to create task.");
+      showToast("Failed to create task.", "error");
     }
   };
 
   const updateTask = async () => {
     if (!editingTask || !editingTask._id) {
-      alert("No task selected for update");
+      showToast("No task selected for update.", "alert");
       return;
     }
 
@@ -331,10 +349,11 @@ const AdminDashboard = () => {
         setEditingTask(null);
 
         setShowModal(false);
+        showToast("Task updated successfully. ", "success");
       }
     } catch (error) {
       console.error("Error updating task:", error);
-      alert(error.response?.data?.message || "Failed to update task.");
+      showToast("Failed to update task.", "error");
     }
   };
 
@@ -359,10 +378,11 @@ const AdminDashboard = () => {
         setTaskToDelete(null);
 
         setShowModal(false);
+        showToast("Task deleted !.", "success");
       }
     } catch (error) {
       console.error("Error deleting task:", error);
-      alert(error.response?.data?.message || "Failed to delete task.");
+      showToast("Failed to delete task.", "error");
     }
   };
 
@@ -389,7 +409,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error("Error deleting task:", error);
-      alert(error.response?.data?.message || "Failed to delete task.");
+      showToast("Failed to delete project. ", "error");
     }
   };
 
@@ -422,7 +442,7 @@ const AdminDashboard = () => {
         delete newLoadingStatus[memberId];
         return newLoadingStatus;
       });
-      alert("Failed to update member status.");
+      showToast("Failed to update member status.", "error");
 
     } finally {
       setLoadingStatus(prev => {
@@ -480,6 +500,12 @@ const AdminDashboard = () => {
   // Project chat navigation for admin
   const openProjectChat = (projectId) => {
     navigate(`/projects/${projectId}/chat`);
+  };
+
+  // Tab changing event toast function
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    showToast(`Viewing ${tab} section`, "info");
   };
 
   const renderDashboardContent = () => {
@@ -1182,29 +1208,30 @@ const AdminDashboard = () => {
 
   return (
     <div className="admin-dashboard">
+      <ToastContainer />
       <div className="sidebar">
         <div className="brand">
           <h1>Taskify</h1>
         </div>
         <div className="menu">
           <ul>
-            <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => setActiveTab('dashboard')}>
+            <li className={activeTab === 'dashboard' ? 'active' : ''} onClick={() => handleTabChange('dashboard')}>
               <i className="fas fa-th-large"></i>
               <span>Dashboard</span>
             </li>
-            <li className={activeTab === 'projects' ? 'active' : ''} onClick={() => setActiveTab('projects')}>
+            <li className={activeTab === 'projects' ? 'active' : ''} onClick={() => handleTabChange('projects')}>
               <i className="fas fa-project-diagram"></i>
               <span>Projects</span>
             </li>
-            <li className={activeTab === 'tasks' ? 'active' : ''} onClick={() => setActiveTab('tasks')}>
+            <li className={activeTab === 'tasks' ? 'active' : ''} onClick={() => handleTabChange('tasks')}>
               <i className="fas fa-tasks"></i>
               <span>Tasks</span>
             </li>
-            <li className={activeTab === 'members' ? 'active' : ''} onClick={() => setActiveTab('members')}>
+            <li className={activeTab === 'members' ? 'active' : ''} onClick={() => handleTabChange('members')}>
               <i className="fas fa-users"></i>
               <span>Team</span>
             </li>
-            <li className={activeTab === 'analytics' ? 'active' : ''} onClick={() => setActiveTab('analytics')}>
+            <li className={activeTab === 'analytics' ? 'active' : ''} onClick={() => handleTabChange('analytics')}>
               <i className="fas fa-chart-bar"></i>
               <span>Analytics</span>
             </li>

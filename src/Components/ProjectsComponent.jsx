@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ClipboardListIcon, UsersIcon } from '@heroicons/react/outline';
 import axios from 'axios';
 import '../Styles/ProjectsComponent.css';
-import '../Styles/loading.css';
+import '../Styles/Toast.css';
 
 const ProjectsComponent = () => {
     const [projects, setProjects] = useState([]);
@@ -33,6 +33,10 @@ const ProjectsComponent = () => {
                 setError('Failed to fetch projects');
                 setLoading(false);
                 console.error('Error fetching projects:', err);
+                // Show error toast
+                if (window.showToast) {
+                    window.showToast('Failed to fetch projects', 'error');
+                }
             }
         };
 
@@ -53,12 +57,23 @@ const ProjectsComponent = () => {
         } catch (err) {
             console.error('Error fetching project details:', err);
             setError('Failed to fetch project details');
+            // Show error toast
+            if (window.showToast) {
+                window.showToast('Failed to fetch project details', 'error');
+            }
         }
     };
 
     const handleStartChat = (projectId) => {
-        // Navigate to project-specific chat
-        navigate(`/projects/${projectId}/chat`);
+        // Show success toast
+        if (window.showToast) {
+            window.showToast(`Redirecting to chat interface...`, 'success', 2000);
+        }
+
+        // Navigate to project-specific chat after a delay
+        setTimeout(() => {
+            navigate(`/projects/${projectId}/chat`);
+        }, 2000);
     };
 
     const closeProjectDetails = () => {

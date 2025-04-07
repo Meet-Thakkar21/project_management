@@ -27,69 +27,72 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.ok) {
-        // Save token and user info (e.g., localStorage or state)
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));  // Store user data
-        console.log('Login successful:', data);
-  
-        // Redirect to dashboard or home page
-        window.location.href = '/';
+        localStorage.setItem('user', JSON.stringify(data.user));
+
+        window.showToast('Logged in successfully', 'success', 3000);
+
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 1500);
       } else {
+        window.showToast(data.message || 'Login failed', 'error', 4000);
         console.error('Login error:', data.message);
-        alert(data.message);
       }
     } catch (error) {
+      window.showToast('An error occurred. Please try again later.', 'error', 4000);
       console.error('Server error:', error);
-      alert('An error occurred. Please try again later.');
     }
   };
 
   const handleGoogleSuccess = (response) => {
     const credential = response.credential;
     console.log('Google JWT Token:', credential);
-  
-    // Send the Google token to your backend for login/signup
+
     fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ googleToken: credential }),
     })
-    .then(res => res.json())
-    .then(data => {
-      if (data.token) {
-        // Save token and user info
-        localStorage.setItem('token', data.token);
-        window.location.href = '/dashboard';
-      } else {
-        console.error('Login failed:', data.message);
-      }
-    })
-    .catch(error => {
-      console.error('Server error:', error);
-      alert('An error occurred. Please try again later.');
-    });
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          window.showToast('Logged in successfully', 'success', 3000);
+
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 1500);
+        } else {
+          window.showToast(data.message || 'Login failed', 'error', 4000);
+          console.error('Login failed:', data.message);
+        }
+      })
+      .catch(error => {
+        window.showToast('An error occurred. Please try again later.', 'error', 4000);
+        console.error('Server error:', error);
+      });
   };
-  
 
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Login Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
-        <div className="w-full max-w-md p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Project Management Tool</h2>
+        <div className="w-full max-w-md p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Taskify - Project Management Tool</h2>
           <h3 className="text-xl text-gray-700 mb-8">Please Enter your Account details</h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Email</label>
@@ -126,7 +129,6 @@ const Login = () => {
             <button
               type="submit"
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition-all"
-              
             >
               Sign In
             </button>
@@ -170,13 +172,12 @@ const Login = () => {
 
       {/* Right Side - Image and Quote */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-emerald-500 to-teal-400 relative">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative w-full h-full flex flex-col items-center justify-center p-12 text-white">
-          <h2 className="text-3xl font-bold mb-6">Welcome to Project Management Tool</h2>
-          <blockquote className="text-lg mb-8">
-            "Project management is like juggling three balls – time, cost, and quality. Program management is like juggling three balls while also trying to eat an apple."
-          </blockquote>
-        </div>
+        <img src="/logo_crop.png" alt="Taskify Logo" className="login-logo" />
+        <h2 className="welcome-text">Welcome to Taskify</h2>
+        <p className="description-text">
+          Taskify is your go-to project management tool designed to simplify collaboration, improve task tracking, and boost productivity.
+          Manage tasks efficiently, communicate seamlessly, and get things done—effortlessly.
+        </p>
       </div>
     </div>
   );

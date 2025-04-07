@@ -47,10 +47,10 @@ const Signup = () => {
         },
         body: JSON.stringify(formData),
       });
-  
+
       const data = await response.json();
       console.log(data);
-  
+
       if (response.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -68,9 +68,9 @@ const Signup = () => {
       {/* Left Side - Signup Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-white overflow-y-auto">
         <div className="w-full max-w-xl p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Taskify</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Taskify - Project Management Tool</h2>
           <h3 className="text-xl text-gray-700 mb-8">Create your account</h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
               <div className="form-group">
@@ -195,7 +195,8 @@ const Signup = () => {
             <button
               type="submit"
               className="submit-button w-full"
-              onClick={()=> navigate('/')}
+              onClick={() => navigate('/')}
+              style={{backgroundColor: "#004080"}}
             >
               Create Account
             </button>
@@ -225,7 +226,7 @@ const Signup = () => {
 
           <p className="mt-6 text-center text-gray-600">
             Already have an account?{' '}
-            <a href="/login" className="text-emerald-600 hover:text-emerald-700 font-medium">
+            <a href="/login" className="text-600 hover:text-emerald-700 font-medium" style={{color: "#004080"}}>
               Sign in
             </a>
           </p>
@@ -236,18 +237,13 @@ const Signup = () => {
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 to-blue-400 relative">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative w-full h-full flex flex-col items-center justify-center p-12 text-white">
-          <div className="testimonial-slider">
-            <div className="testimonial active">
-            <h2 className="text-3xl font-bold mb-6">Welcome to Project Management Tool</h2>
-          <blockquote className="text-lg mb-8">"Project management is like juggling three balls – time, cost, and quality. Program management is like juggling three balls while also trying to eat an apple.""Search and find your dream job is now easier than ever. Just browse a job and apply if you need to."
-          </blockquote>
-          </div>
-          </div>
-          
-          <div className="absolute bottom-12 left-12 flex space-x-4">
-            <button className="slider-arrow prev">←</button>
-            <button className="slider-arrow next">→</button>
-          </div>
+          <img src="/logo_crop.png" alt="Taskify Logo" className="signup-logo" />
+          <h2 className="welcome-text" style={{color: "#fff"}}>Welcome to Taskify</h2>
+          <p className="description-text" style={{color: "#cee3f8"}}>
+            Taskify is a powerful project management platform that simplifies team collaboration,
+            enhances workflow efficiency, and helps you track tasks effortlessly. Get started now
+            and streamline your projects like never before!
+          </p>
         </div>
       </div>
     </div>

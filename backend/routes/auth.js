@@ -63,7 +63,7 @@ router.post('/login', async (req, res) => {
 
       // Generate JWT token for the user
       const token = jwt.sign(
-        { userId: user._id, role: user.role },
+        { userId: user._id, role: user.role, firstName: user.firstName, lastName: user.lastName },
         process.env.JWT_SECRET, // Replace with your secret key
         { expiresIn: '1h' }
       );
@@ -71,7 +71,7 @@ router.post('/login', async (req, res) => {
       return res.status(200).json({
         message: 'Login successful',
         token,
-        user: { id: user._id, email: user.email, role: user.role }
+        user: { id: user._id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName }
       });
     }
 
@@ -96,7 +96,7 @@ router.post('/login', async (req, res) => {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user._id, role: user.role },
+        { userId: user._id, role: user.role, firstName: user.firstName, lastName: user.lastName },
         process.env.JWT_SECRET, // Replace with your secret key
         { expiresIn: '1h' }
       );
@@ -104,7 +104,7 @@ router.post('/login', async (req, res) => {
       return res.status(200).json({
         message: 'Login successful',
         token,
-        user: { id: user._id, email: user.email, role: user.role }
+        user: { id: user._id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName }
       });
     }
 

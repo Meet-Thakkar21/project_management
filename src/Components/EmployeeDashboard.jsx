@@ -1,7 +1,9 @@
 // EmployeeDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircleIcon } from '@heroicons/react/outline';
+import ToastContainer from './ToastContainer';
 import {
   BellIcon,
   UserIcon,
@@ -23,12 +25,21 @@ import '../Styles/EmployeeDashboard.css';
 import '../Styles/loading.css'
 
 const EmployeeDashboard = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const loadToastShown = useRef(false);
+
+  const showToast = (message, type) => {
+    if (window.showToast) {
+      window.showToast(message, type);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,7 +48,7 @@ const EmployeeDashboard = () => {
         const token = localStorage.getItem("token");
         console.log(token);
         if (!token) {
-          alert("No token found. Please log in again.");
+          showToast("No token found. Please log in again.", "error");
           return;
         }
         // Fetch tasks
@@ -74,10 +85,23 @@ const EmployeeDashboard = () => {
         });
         setUserProfile(profileResponse.data);
 
+        // Get count of unread messages across all projects
+        const messagesResponse = await axios.get("http://localhost:5000/api/chat/unread-count", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setUnreadMessages(messagesResponse.data.count);
         setLoading(false);
+        if (!loadToastShown.current) {
+          showToast("Dashboard loaded successfully!", "success");
+          loadToastShown.current = true;
+        }
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load data. Please check your connection and try again.');
+        showToast("Failed to load dashboard data.", "error");
         setLoading(false);
       }
     };
@@ -92,7 +116,7 @@ const EmployeeDashboard = () => {
       const token = localStorage.getItem("token");
       console.log(token);
       if (!token) {
-        alert("No token found. Please log in again.");
+        showToast("No token found. Please log in again.", "error");
         return;
       }
       // Find the task
@@ -110,8 +134,10 @@ const EmployeeDashboard = () => {
       setTasks(tasks.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ));
+      showToast(`Task ${newStatus === "completed" ? "completed" : "marked as pending"}!`, "success");
     } catch (err) {
       console.error('Error updating task:', err);
+      showToast("Failed to update task status.", "error");
     }
   };
 
@@ -133,7 +159,10 @@ const EmployeeDashboard = () => {
     return (
       <div className="error-container">
         <p>{error}</p>
-        <button onClick={() => window.location.reload()}>Try Again</button>
+        <button onClick={() => {
+          window.location.reload();
+          showToast("Attempting to reload dashboard...", "alert");
+        }}>Try Again</button>
       </div>
     );
   }
@@ -286,38 +315,45 @@ const EmployeeDashboard = () => {
     }
   };
 
+  // Tab changing event toast function
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    showToast(`Viewing ${tab} section`, "info");
+  };
+
   return (
     <div className="employee-dashboard">
+      <ToastContainer />
       <div className="sidebar">
         <div className="logo">
-          <h1>Taskify</h1>
+          <img src="/logo_crop.png" alt="Taskify Logo" className="nav-logo" onClick={() => navigate("/")} />
         </div>
         <ul className="nav-items">
-          <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+          <li className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleTabChange('dashboard')}>
             <HomeIcon className="nav-icon" />
             <span>Dashboard</span>
           </li>
-          <li className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => setActiveTab('tasks')}>
+          <li className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`} onClick={() => handleTabChange('tasks')}>
             <ClipboardListIcon className="nav-icon" />
             <span>Tasks</span>
           </li>
-          <li className={`nav-item ${activeTab === 'teams' ? 'active' : ''}`} onClick={() => setActiveTab('teams')}>
+          <li className={`nav-item ${activeTab === 'teams' ? 'active' : ''}`} onClick={() => handleTabChange('teams')}>
             <UserGroupIcon className="nav-icon" />
             <span>Teams</span>
           </li>
-          <li className={`nav-item ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => setActiveTab('projects')}>
+          <li className={`nav-item ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => handleTabChange('projects')}>
             <ClipboardListIcon className="nav-icon" />
             <span>Projects</span>
           </li>
-          <li className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>
-            <UserIcon className="nav-icon" />
-            <span>Profile</span>
-          </li>
-          <li className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => setActiveTab('documents')}>
+          <li className={`nav-item ${activeTab === 'documents' ? 'active' : ''}`} onClick={() => handleTabChange('documents')}>
             <DocumentIcon className="nav-icon" />
             <span>Documents</span>
           </li>
-          <li className={`nav-item ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => setActiveTab('performance')}>
+          <li className={`nav-item ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => handleTabChange('profile')}>
+            <UserIcon className="nav-icon" />
+            <span>Profile</span>
+          </li>
+          <li className={`nav-item ${activeTab === 'performance' ? 'active' : ''}`} onClick={() => handleTabChange('performance')}>
             <ChartBarIcon className="nav-icon" />
             <span>Performance</span>
           </li>
@@ -329,7 +365,7 @@ const EmployeeDashboard = () => {
             <input type="text" placeholder="Search..." />
           </div>
           <div className="user-info">
-            <NotificationComponent pendingTasks={pendingTasks} />
+            <NotificationComponent pendingTasks={pendingTasks} unreadMessages={unreadMessages} />
             <div className="user-avatar">
               <span className="avatar-text">
                 {userProfile && `${userProfile.firstName?.charAt(0) || ''}${userProfile.lastName?.charAt(0) || 'U'}`}
