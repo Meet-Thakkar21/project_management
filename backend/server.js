@@ -166,7 +166,7 @@ io.on('connection', (socket) => {
 
   // Handle disconnection
   socket.on('disconnect', () => {
-    console.log('🚪 User disconnected:', socket.id);
+    console.log('User disconnected:', socket.id);
   });
 });
 

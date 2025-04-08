@@ -286,4 +286,73 @@ router.post('/mark-read', authMiddleware, async (req, res) => {
   }
 });
 
+// Add this to your routes file
+router.post('/:projectId/mark-read', authMiddleware, async (req, res) => {
+  try {
+    const { projectId } = req.params;
+    const userId = req.user.userId;
+
+    // Find all unread messages in this project
+    const result = await Message.updateMany(
+      {
+        project: projectId,
+        readBy: { $ne: userId },
+        sender: { $ne: userId }
+      },
+      { $push: { readBy: userId } }
+    );
+
+    res.json({
+      message: 'Project messages marked as read',
+      updatedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Error marking project messages as read:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Count unread messages
+router.get('/unread-count', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const projects = await Project.find({ members: userId }).select('_id');
+    const projectIds = projects.map(project => project._id);
+
+    const count = await Message.countDocuments({
+      project: { $in: projectIds },
+      readBy: { $nin: [userId] },
+      sender: { $ne: userId }
+    });
+
+    return res.status(200).json({ count, projectIds });
+  } catch (error) {
+    console.error('Error fetching unread messages count:', error);
+    return res.status(500).json({ message: 'Server error while fetching unread messages count', error: error.message });
+  }
+});
+
+// Get unread messages for the logged-in user
+router.get('/unread-messages', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const projects = await Project.find({ members: userId }).select('_id');
+    const projectIds = projects.map(project => project._id);
+
+    const messages = await Message.find({
+      project: { $in: projectIds },
+      readBy: { $nin: [userId] },
+      sender: { $ne: userId }
+    })
+      .populate('sender', 'firstName lastName')
+      .populate('project', 'name')
+      .sort({ createdAt: -1 })
+      .limit(10);
+    return res.status(200).json({ messages });
+  } catch (error) {
+    console.error('Error fetching unread messages:', error);
+    return res.status(500).json({ error: 'Server error while fetching unread messages' });
+  }
+});
+
 module.exports = router;

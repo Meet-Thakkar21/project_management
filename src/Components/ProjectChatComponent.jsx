@@ -179,6 +179,10 @@ function ProjectChat() {
     };
 
     useEffect(() => {
+        if (projectId) {
+            markProjectMessagesAsRead(projectId);
+        }
+        
         fetchProjectDetails();
         // console.log("Messsages after loading..\n", messages);
     }, [projectId, pagination.currentPage, navigate]);
@@ -187,6 +191,26 @@ function ProjectChat() {
     const isWithinEditWindow = (messageDate) => {
         const fifteenMinutesAgo = moment().subtract(15, 'minutes');
         return moment(messageDate).isAfter(fifteenMinutesAgo);
+    };
+
+    // 
+    const markProjectMessagesAsRead = async (projectId) => {
+        try {
+            const token = localStorage.getItem("token");
+
+            await axios.post(
+                `http://localhost:5000/api/chat/${projectId}/mark-read`,
+                {}, // Empty body
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            window.dispatchEvent(new CustomEvent('messagesRead'));
+        } catch (error) {
+            console.error("Error marking project messages as read:", error);
+        }
     };
 
     // Start editing a message
@@ -1214,7 +1238,7 @@ function ProjectChat() {
                             </button>
                         </div>
                     </form>
-                    
+
                     {/* Delete Confirmation Dialog */}
                     {showDeleteConfirm && (
                         <div className="delete-confirmation-overlay">

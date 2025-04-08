@@ -141,6 +141,32 @@ const EmployeeDashboard = () => {
     }
   };
 
+  // listener for the messagesRead event
+  useEffect(() => {
+    const handleMessagesRead = () => {
+      // Re-fetch the unread count
+      const fetchUnreadCount = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await axios.get("http://localhost:5000/api/chat/unread-count", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          setUnreadMessages(response.data.count);
+        } catch (error) {
+          console.error("Error fetching unread count:", error);
+        }
+      };
+
+      fetchUnreadCount();
+    };
+    window.addEventListener('messagesRead', handleMessagesRead);
+    return () => {
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
+  }, []);
+
   // Count completed tasks
   const completedTasks = tasks.filter(task => task.status === "completed").length;
   const pendingTasks = tasks.filter(task => task.status === "pending").length;
@@ -365,7 +391,11 @@ const EmployeeDashboard = () => {
             <input type="text" placeholder="Search..." />
           </div>
           <div className="user-info">
-            <NotificationComponent pendingTasks={pendingTasks} unreadMessages={unreadMessages} />
+            <NotificationComponent
+              pendingTasks={pendingTasks}
+              unreadMessages={unreadMessages}
+              setUnreadMessages={setUnreadMessages}  // Setter function
+            />
             <div className="user-avatar">
               <span className="avatar-text">
                 {userProfile && `${userProfile.firstName?.charAt(0) || ''}${userProfile.lastName?.charAt(0) || 'U'}`}
