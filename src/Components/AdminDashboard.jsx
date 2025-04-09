@@ -42,9 +42,7 @@ const AdminDashboard = () => {
   const loadToastShown = useRef(false);
 
   const showToast = (message, type) => {
-    if (window.showToast) {
-      window.showToast(message, type);
-    }
+    window.showToast(message, type);
   };
   // Function to filter tasks
   const filteredTasks = tasks.filter(task => {
