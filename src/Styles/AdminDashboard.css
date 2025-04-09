@@ -124,7 +124,6 @@ body {
 .search-bar {
   display: flex;
   align-items: center;
-  background-color: var(--bg-color);
   border-radius: 20px;
   padding: 8px 15px;
   margin-left: 10px;

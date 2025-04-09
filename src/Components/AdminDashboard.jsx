@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../Styles/AdminDashboard.css';
 import '../Styles/loading.css';
+import DocumentsComponent from './DocumentsComponent';
 import NotificationComponent from './NotificationComponent';
 import ToastContainer from './ToastContainer';
 import axios from 'axios';
@@ -874,11 +875,20 @@ const AdminDashboard = () => {
           </div>
         );
 
+      case 'documents':
+        return (
+          <div className="tasks-container">
+            <div className="section-header">
+              <h2>Shared Documents</h2>
+            </div>
+            <DocumentsComponent />
+          </div>
+        );
       case 'analytics':
         return (
           <div className="tasks-container">
             <div className="section-header">
-              <h3 className="page-title">Performance Overview</h3>
+              <h2>Performance Overview</h2>
             </div>
             <img
               src="comingsoon.jpg"
@@ -1230,6 +1240,10 @@ const AdminDashboard = () => {
             <li className={activeTab === 'members' ? 'active' : ''} onClick={() => handleTabChange('members')}>
               <i className="fas fa-users"></i>
               <span>Team</span>
+            </li>
+            <li className={activeTab === 'documents' ? 'active' : ''} onClick={() => handleTabChange('documents')}>
+              <i className="fas fa-file"></i>
+              <span>Documents</span>
             </li>
             <li className={activeTab === 'analytics' ? 'active' : ''} onClick={() => handleTabChange('analytics')}>
               <i className="fas fa-chart-bar"></i>

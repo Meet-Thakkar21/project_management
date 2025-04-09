@@ -218,7 +218,12 @@ router.get('/documents', authMiddleware, async (req, res) => {
         // const teamIds = teams.map(team => team._id);
 
         // Find all projects the user has access to
-        const projects = await Project.find({ members: userId });
+        const projects = await Project.find({
+            $or: [
+                { members: userId },
+                { createdBy: userId }
+            ]
+        });
         const projectIds = projects.map(project => project._id);
 
         // Find all messages with documents in those projects
