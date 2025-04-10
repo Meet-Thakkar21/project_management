@@ -6,6 +6,41 @@ const Project = require("../models/Projects");
 const User = require("../models/User");
 const Messages = require("../models/Messages");
 const authMiddleware = require("../Middleware/authMiddleware");
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = path.join(__dirname, '../uploads/profile');
+        // Create directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        // Create unique filename with user ID and timestamp
+        const uniqueSuffix = `${req.user.userId}-${Date.now()}${path.extname(file.originalname)}`;
+        cb(null, uniqueSuffix);
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed!'), false);
+    }
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+    }
+});
 
 // Get all tasks assigned to the logged-in employee
 router.get('/tasks', authMiddleware, async (req, res) => {
@@ -176,7 +211,7 @@ router.get('/memberprofile/:memberId', async (req, res) => {
 });
 
 //Update user profile
-router.put('/profile', authMiddleware, async (req, res) => {
+router.put('/profile', authMiddleware, upload.single('profileImage'), async (req, res) => {
     try {
         const { firstName, lastName, dob, gender, skills } = req.body;
 
@@ -189,6 +224,26 @@ router.put('/profile', authMiddleware, async (req, res) => {
             profileFields.skills = Array.isArray(skills) ? skills : [skills];
         }
 
+        if (req.file) {
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            const relativePath = path.relative(path.join(__dirname, '..'), req.file.path).replace(/\\/g, '/');
+            profileFields.profileImage = `${baseUrl}/${relativePath}`;
+
+            const currentUser = await User.findById(req.user.userId);
+            if (currentUser && currentUser.profileImage) {
+                try {
+                    const urlObj = new URL(currentUser.profileImage);
+                    const oldImagePath = path.join(__dirname, '..', urlObj.pathname);
+
+                    const uploadsDir = path.join(__dirname, '../uploads');
+                    if (oldImagePath.startsWith(uploadsDir) && fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                } catch (error) {
+                    console.error('Error deleting old profile image:', error);
+                }
+            }
+        }
         const user = await User.findByIdAndUpdate(
             req.user.userId,
             { $set: profileFields },
@@ -200,11 +255,17 @@ router.put('/profile', authMiddleware, async (req, res) => {
         res.json(user);
     } catch (err) {
         console.error('Error updating profile:', err.message);
+        // Handle multer errors
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ msg: 'File too large. Maximum size is 5MB.' });
+            }
+            return res.status(400).json({ msg: `Upload error: ${err.message}` });
+        }
         if (err.name === 'ValidationError') {
             const messages = Object.values(err.errors).map(val => val.message);
             return res.status(400).json({ msg: messages.join(', ') });
         }
-
         res.status(500).json({ msg: 'Server Error' });
     }
 });

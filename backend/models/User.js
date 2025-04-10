@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
   role: { type: String, enum: ['project_admin', 'employee'], required: false },
   dob: { type: Date, required: false },
   gender: { type: String, enum: ['male', 'female', 'other'], required: false },
-  skills: { type: [String], required: false }
+  skills: { type: [String], required: false },
+  profileImage: { type: String, required: false }
 });
 
 // Hash password before saving

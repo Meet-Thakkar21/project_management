@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { PencilIcon, UserIcon } from '@heroicons/react/outline';
+import { PencilIcon, UserIcon, PhotographIcon } from '@heroicons/react/outline';
 import '../Styles/ProfileComponent.css';
 import ToastContainer from './ToastContainer';
 
 const defaultProfileImage = "https://ui-avatars.com/api/?name=U&background=random";
-
 
 const ProfileComponent = () => {
     const [userProfile, setUserProfile] = useState(null);
@@ -22,6 +21,9 @@ const ProfileComponent = () => {
         gender: '',
         skills: []
     });
+    const [imageFile, setImageFile] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const fileInputRef = useRef(null);
     const loadToastShown = useRef(false);
 
     const showToast = (message, type) => {
@@ -57,12 +59,13 @@ const ProfileComponent = () => {
                     gender: response.data.gender,
                     skills: response.data.skills || []
                 });
+                setImagePreview(response.data.profileImage);
                 setLoading(false);
                 if (!loadToastShown.current) {
                     showToast("Profile Data loaded.", "success");
                     loadToastShown.current = true;
                 }
-                
+
             } catch (err) {
                 console.error('Error fetching profile:', err);
                 showToast("Failed to load Profile data.", "error");
@@ -104,11 +107,39 @@ const ProfileComponent = () => {
         }
     };
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Check file type
+            if (!file.type.match('image.*')) {
+                showToast('Please select an image file', 'error');
+                return;
+            }
+
+            // Check file size - limit to 5MB
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Image size should be less than 5MB', 'error');
+                return;
+            }
+
+            setImageFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const triggerFileInput = () => {
+        fileInputRef.current.click();
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setUpdateError(null);
         setUpdateSuccess(false);
-        
+
         try {
             const token = localStorage.getItem("token");
             if (!formData.dob || !formData.email || !formData.firstName || !formData.lastName || !formData.gender) {
@@ -120,17 +151,35 @@ const ProfileComponent = () => {
                 return;
             }
 
-            const dataToSend = { ...formData };
+            // Create form data to handle file upload
+            const formDataToSend = new FormData();
+            formDataToSend.append('firstName', formData.firstName);
+            formDataToSend.append('lastName', formData.lastName);
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('dob', formData.dob);
+            formDataToSend.append('gender', formData.gender);
 
-            console.log("Sending profile update with data:", dataToSend);
+            // Append each skill as a separate entry
+            if (formData.skills && formData.skills.length) {
+                formData.skills.forEach(skill => {
+                    formDataToSend.append('skills', skill);
+                });
+            }
+
+            // Append image file if exists
+            if (imageFile) {
+                formDataToSend.append('profileImage', imageFile);
+            }
+
+            console.log("Sending profile update with data:", formDataToSend);
 
             const response = await axios.put(
                 "http://localhost:5000/api/employee/profile",
-                dataToSend,
+                formDataToSend,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'multipart/form-data'
                     },
                 }
             );
@@ -139,16 +188,24 @@ const ProfileComponent = () => {
 
             setUserProfile(prevProfile => ({
                 ...prevProfile,
-                ...formData
+                ...formData,
+                profileImage: response.data.profileImage || prevProfile.profileImage
             }));
 
             setUpdateSuccess(true);
             setEditing(false);
+            setImageFile(null);
         } catch (err) {
             console.error('Error updating profile:', err);
             const errorMsg = err.response?.data?.msg || 'Failed to update profile. Please try again.';
             setUpdateError(errorMsg);
         }
+    };
+
+    const handleCancel = () => {
+        setEditing(false);
+        setImageFile(null);
+        setImagePreview(userProfile.profileImage);
     };
 
     if (loading) {
@@ -185,15 +242,43 @@ const ProfileComponent = () => {
             <div className="profile-content">
                 <div className="profile-image-section">
                     <div className="profile-image-container">
-                        {userProfile.profileImage ? (
-                            <img
-                                src={userProfile.profileImage}
-                                alt="Profile"
-                                className="profile-image"
-                                onError={(e) => e.target.src = defaultProfileImage} // Fallback if image fails to load
-                            />
+                        {editing ? (
+                            <div className="profile-image-edit">
+                                {imagePreview ? (
+                                    <img
+                                        src={imagePreview}
+                                        alt="Profile Preview"
+                                        className="profile-image"
+                                        onError={(e) => e.target.src = defaultProfileImage}
+                                    />
+                                ) : (
+                                    <UserIcon className="profile-icon" />
+                                )}
+                                <div className="profile-image-overlay" onClick={triggerFileInput}>
+                                    <PhotographIcon className="camera-icon" />
+                                    <span>Change Photo</span>
+                                </div>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleImageChange}
+                                    accept="image/*"
+                                    className="file-input"
+                                />
+                            </div>
                         ) : (
-                            <UserIcon className="profile-icon" />
+                            <>
+                                {userProfile.profileImage || imagePreview ? (
+                                    <img
+                                        src={userProfile.profileImage || imagePreview}
+                                        alt="Profile"
+                                        className="profile-image"
+                                        onError={(e) => e.target.src = defaultProfileImage}
+                                    />
+                                ) : (
+                                    <UserIcon className="profile-icon" />
+                                )}
+                            </>
                         )}
                     </div>
                     <div className="profile-name">
@@ -272,7 +357,7 @@ const ProfileComponent = () => {
 
                         <div className="form-actions">
                             <button type="submit" className="save-button">Save Changes</button>
-                            <button type="button" className="cancel-button" onClick={() => setEditing(false)}>Cancel</button>
+                            <button type="button" className="cancel-button" onClick={handleCancel}>Cancel</button>
                         </div>
                     </form>
                 ) : (
