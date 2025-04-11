@@ -194,7 +194,7 @@ const Signup = () => {
 
             <button
               type="submit"
-              className="submit-button w-full"
+              className="submitButton w-full"
               onClick={() => navigate('/')}
               style={{backgroundColor: "#004080"}}
             >

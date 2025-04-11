@@ -310,7 +310,7 @@ const AdminDashboard = () => {
         setNewTask({ name: "", project: "", assignedTo: "", deadline: "", status: "" });
 
         setShowModal(false);
-        showToast("Task created successfully.", "error");
+        showToast("Task created successfully.", "success");
       }
     } catch (error) {
       console.error("Error creating task:", error);
@@ -676,6 +676,9 @@ const AdminDashboard = () => {
                         <button className="icon-button" onClick={() => openProjectChat(project._id)}>
                           <i className="fas fa-comment-dots"></i>
                         </button>
+                        {/* <button className="icon-button" onClick={() => handleCreateMeeting(project._id)}>
+                          <i className="fas fa-video"></i>
+                        </button> */}
                         <button className="icon-button" onClick={() => openDeleteProjectModal(project._id)}>
                           <i className="fas fa-trash-alt"></i>
                         </button>

@@ -45,11 +45,11 @@
 }
 
 /* Submit button */
-.submit-button {
+.submitButton {
   @apply bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-lg transition-all;
 }
 
-.submit-button:hover {
+.submitButton:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
@@ -166,12 +166,12 @@ form {
 }
 
 /* Loading state */
-.submit-button.loading {
+.submitButton.loading {
   position: relative;
   color: transparent;
 }
 
-.submit-button.loading:after {
+.submitButton.loading:after {
   content: '';
   position: absolute;
   width: 20px;

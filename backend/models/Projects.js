@@ -14,11 +14,8 @@ const ProjectSchema = new mongoose.Schema({
 });
 
 ProjectSchema.methods.addMessage = async function (messageId) {
-  // Add message to project's messages array
   this.messages.push(messageId);
-
   this.lastMessage = messageId;
-
   await this.save();
   return this;
 };
