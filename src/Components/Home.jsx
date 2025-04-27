@@ -119,14 +119,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Admin Dashboard Button */}
-      {user && user.role === "project_admin" && (
-        <div className="admin-dashboard">
-          <button className="admin-btn" onClick={() => navigate('/admin-dashboard')}>
-            Go to Admin Dashboard
-          </button>
-        </div>
-      )}
+      
 
       {/* About Us Section */}
       <section id="about" className="about">

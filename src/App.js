@@ -9,6 +9,7 @@ import AdminDashboard from './Components/AdminDashboard';
 import EmployeeDashboard from './Components/EmployeeDashboard';
 import ProjectChat from './Components/ProjectChatComponent';
 import ToastContainer from './Components/ToastContainer';
+import VideoCall from './Components/VideoCall';
 
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
 /*************  ✨ Codeium Command ⭐  *************/
@@ -20,6 +21,7 @@ const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleuserc
  */
 /******  30efa471-17f1-4ca2-b21f-e310f313eb6d  *******/function App() {
   return (
+    
     <GoogleOAuthProvider clientId={clientId}>
       <Router>
         <ToastContainer />
@@ -32,9 +34,11 @@ const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleuserc
           <Route path="/projects/:projectId/chat" element={<ProjectChat />} />
           <Route path="/unauthorized" element={<Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
+          <Route path = "/videocall" element = {<VideoCall />} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>
+    
   );
 }
 

@@ -209,6 +209,13 @@ const AdminDashboard = () => {
     });
   };
 
+  const handleCall = (email) => {
+    if (email) {
+      navigate(`/videocall?email=${(email)}`);
+    } else {
+      alert("Email not available");
+    }
+  };
   useEffect(() => {
     const storedUser = localStorage.getItem('user'); // Fetch user object
     if (storedUser) {
@@ -738,14 +745,24 @@ const AdminDashboard = () => {
                           </button>
                         </td>
                         <td>
-                          <button
-                            className="icon-button"
-                            onClick={() => toggleMemberDetails(memberId)}
-                          >
-                            <i className={`fas ${expandedMemberId === memberId ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
-                          </button>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}  >
+                            <button
+                              className="icon-button"
+                              onClick={() => handleCall(member.memberId?.email)}
+                            >
+                              <i className="fas fa-phone"></i> {/* Phone icon */}
+                            </button>
+                            <button
+                              className="icon-button"
+                              onClick={() => toggleMemberDetails(memberId)}
+                            >
+                              <i className={`fas ${expandedMemberId === memberId ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+                            </button>
+                          </div>
                         </td>
                       </tr>
+                    
+                    
                       {expandedMemberId === memberId && (
                         <tr className="member-details-row">
                           <td colSpan="5">

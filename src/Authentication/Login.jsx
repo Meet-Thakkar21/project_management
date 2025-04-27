@@ -40,6 +40,7 @@ const Login = () => {
       if (response.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('email', data.user.email);
 
         window.showToast('Logged in successfully', 'success', 3000);
 
