@@ -212,16 +212,7 @@ const Signup = () => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <button className="social-button">
-                <FaGoogle className="text-gray-600 mr-2" />
-                <span>Google</span>
-              </button>
-              <button className="social-button">
-                <FaGithub className="text-gray-600 mr-2" />
-                <span>GitHub</span>
-              </button>
-            </div>
+           
           </div>
 
           <p className="mt-6 text-center text-gray-600">

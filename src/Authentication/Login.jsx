@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaGoogle, FaGithub } from 'react-icons/fa';
 import './Login.css';
+import ProfileCompletion from './ProfileCompletion';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -8,7 +9,11 @@ const Login = () => {
     password: ''
   });
 
-  const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com"; // Replace with your actual Google Client ID
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [socialUserId, setSocialUserId] = useState(null);
+
+  const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com";
+  const githubClientId = "Ov23liDLlOoHIjmk1dmK"; // Replace with your GitHub Client ID
 
   useEffect(() => {
     // Initialize Google Sign-In
@@ -16,6 +21,37 @@ const Login = () => {
       client_id: clientId,
       callback: handleGoogleSuccess,
     });
+
+    // Check for GitHub OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+
+    if (error) {
+      console.error('GitHub OAuth error:', error);
+      window.showToast('GitHub login failed', 'error', 4000);
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/login');
+      return;
+    }
+
+    if (code) {
+      handleGithubCallback(code);
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/login');
+    }
+
+    // Check if we need to show profile completion from localStorage
+    const profileCompletion = urlParams.get('profileCompletion');
+    if (profileCompletion === 'true') {
+      const pendingData = localStorage.getItem('pendingProfileCompletion');
+      if (pendingData) {
+        const { userId } = JSON.parse(pendingData);
+        setSocialUserId(userId);
+        setShowProfileCompletion(true);
+        localStorage.removeItem('pendingProfileCompletion');
+      }
+    }
   }, []);
 
   const handleChange = (e) => {
@@ -45,7 +81,11 @@ const Login = () => {
         window.showToast('Logged in successfully', 'success', 3000);
 
         setTimeout(() => {
-          window.location.href = '/';
+          if (data.user.role === 'project_admin') {
+            window.location.href = '/admin-dashboard';
+          } else {
+            window.location.href = '/dashboard';
+          }
         }, 1500);
       } else {
         window.showToast(data.message || 'Login failed', 'error', 4000);
@@ -68,12 +108,23 @@ const Login = () => {
     })
       .then(res => res.json())
       .then(data => {
-        if (data.token) {
+        if (data.needsProfileCompletion) {
+          // Show profile completion form
+          setSocialUserId(data.userId);
+          setShowProfileCompletion(true);
+        } else if (data.token) {
+          // User already has complete profile
           localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
           window.showToast('Logged in successfully', 'success', 3000);
 
           setTimeout(() => {
-            window.location.href = '/dashboard';
+            // Redirect based on role
+            if (data.user.role === 'project_admin') {
+              window.location.href = '/admin-dashboard';
+            } else {
+              window.location.href = '/dashboard';
+            }
           }, 1500);
         } else {
           window.showToast(data.message || 'Login failed', 'error', 4000);
@@ -86,13 +137,93 @@ const Login = () => {
       });
   };
 
+  const handleGithubLogin = () => {
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/github/callback')}`;
+    
+    // Redirect to GitHub OAuth (same window)
+    window.location.href = githubAuthUrl;
+  };
+
+  const handleGithubCallback = async (code) => {
+    try {
+      // Exchange code for access token
+      const tokenResponse = await fetch('http://localhost:5000/api/auth/github/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+
+      const tokenData = await tokenResponse.json();
+      
+      if (tokenData.access_token) {
+        // Use the access token to authenticate
+        const response = await fetch('http://localhost:5000/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ githubToken: tokenData.access_token })
+        });
+
+        const data = await response.json();
+
+        if (data.needsProfileCompletion) {
+          setSocialUserId(data.userId);
+          setShowProfileCompletion(true);
+        } else if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          window.showToast('Logged in successfully', 'success', 3000);
+
+          setTimeout(() => {
+            if (data.user.role === 'project_admin') {
+              window.location.href = '/admin-dashboard';
+            } else {
+              window.location.href = '/dashboard';
+            }
+          }, 1500);
+        } else {
+          window.showToast(data.message || 'GitHub login failed', 'error', 4000);
+        }
+      } else {
+        window.showToast('Failed to get GitHub access token', 'error', 4000);
+      }
+    } catch (error) {
+      console.error('GitHub login error:', error);
+      window.showToast('GitHub login failed', 'error', 4000);
+    }
+  };
+
+  const handleProfileComplete = (user) => {
+    // Profile completion successful, redirect to appropriate dashboard
+    setTimeout(() => {
+      if (user.role === 'project_admin') {
+        window.location.href = '/admin-dashboard';
+      } else {
+        window.location.href = '/dashboard';
+      }
+    }, 1500);
+  };
+
+  // If showing profile completion, render that component
+  if (showProfileCompletion) {
+    return (
+      <ProfileCompletion 
+        userId={socialUserId} 
+        onProfileComplete={handleProfileComplete}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Login Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center bg-white">
         <div className="w-full max-w-md p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Taskify - Project Management Tool</h2>
-          <h3 className="text-xl text-gray-700 mb-8">Please Enter your Account details</h3>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Taskify - Project Management Tool
+          </h2>
+          <h3 className="text-xl text-gray-700 mb-8">
+            Please Enter your Account details
+          </h3>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -122,7 +253,10 @@ const Login = () => {
             </div>
 
             <div className="flex items-center justify-end">
-              <button type="button" className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
+              <button 
+                type="button" 
+                className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+              >
                 Forgot Password?
               </button>
             </div>
@@ -155,7 +289,11 @@ const Login = () => {
                 <span className="text-gray-700">Google</span>
               </button>
 
-              <button className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all">
+              {/* GitHub Login Button */}
+              <button
+                onClick={handleGithubLogin}
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+              >
                 <FaGithub className="text-gray-600 mr-2" />
                 <span className="text-gray-700">GitHub</span>
               </button>
@@ -176,8 +314,9 @@ const Login = () => {
         <img src="/logo_crop.png" alt="Taskify Logo" className="login-logo" />
         <h2 className="welcome-text">Welcome to Taskify</h2>
         <p className="description-text">
-          Taskify is your go-to project management tool designed to simplify collaboration, improve task tracking, and boost productivity.
-          Manage tasks efficiently, communicate seamlessly, and get things done—effortlessly.
+          Taskify is your go-to project management tool designed to simplify collaboration, 
+          improve task tracking, and boost productivity. Manage tasks efficiently, 
+          communicate seamlessly, and get things done—effortlessly.
         </p>
       </div>
     </div>

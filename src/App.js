@@ -10,16 +10,9 @@ import EmployeeDashboard from './Components/EmployeeDashboard';
 import ProjectChat from './Components/ProjectChatComponent';
 import ToastContainer from './Components/ToastContainer';
 import VideoCall from './Components/VideoCall';
-
+import GitHubCallback from './Authentication/GitHubCallback';
 const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
-/*************  ✨ Codeium Command ⭐  *************/
-/**
- * The main app component, which sets up the Google OAuth provider
- * and the main routes to the different pages in the app.
- *
- * @returns {JSX.Element} The JSX element representing the App component.
- */
-/******  30efa471-17f1-4ca2-b21f-e310f313eb6d  *******/function App() {
+function App() {
   return (
     
     <GoogleOAuthProvider clientId={clientId}>
@@ -35,6 +28,7 @@ const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleuserc
           <Route path="/unauthorized" element={<Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
           <Route path = "/videocall" element = {<VideoCall />} />
+          <Route path="/auth/github/callback" component={GitHubCallback} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>
