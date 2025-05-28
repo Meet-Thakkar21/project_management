@@ -162,7 +162,7 @@ form {
 .form-input:invalid:focus,
 .form-select:invalid:focus {
   border-color: #ef4444;
-  ring-color: #fecaca;
+  /* ring-color: #fecaca; */
 }
 
 /* Loading state */

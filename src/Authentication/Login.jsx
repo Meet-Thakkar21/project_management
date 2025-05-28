@@ -13,7 +13,8 @@ const Login = () => {
   const [socialUserId, setSocialUserId] = useState(null);
 
   const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com";
-  const githubClientId = "Ov23liDLlOoHIjmk1dmK"; // Replace with your GitHub Client ID
+  const githubClientId = "Ov23liDLlOoHIjmk1dmK";
+  const githubRedirectUri = `${window.location.origin}/auth/github/callback`
 
   useEffect(() => {
     // Initialize Google Sign-In
@@ -138,8 +139,10 @@ const Login = () => {
   };
 
   const handleGithubLogin = () => {
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/github/callback')}`;
-    
+     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(githubRedirectUri)}`;
+  
+      console.log('GitHub Auth URL:', githubAuthUrl);
+      console.log('Redirect URI:', githubRedirectUri);
     // Redirect to GitHub OAuth (same window)
     window.location.href = githubAuthUrl;
   };

@@ -11,7 +11,7 @@ import ProjectChat from './Components/ProjectChatComponent';
 import ToastContainer from './Components/ToastContainer';
 import VideoCall from './Components/VideoCall';
 import GitHubCallback from './Authentication/GitHubCallback';
-const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com ";
+const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com";
 function App() {
   return (
     
@@ -28,7 +28,7 @@ function App() {
           <Route path="/unauthorized" element={<Navigate to="/login" />} />
           <Route path="*" element={<Navigate to="/login" />} />
           <Route path = "/videocall" element = {<VideoCall />} />
-          <Route path="/auth/github/callback" component={GitHubCallback} />
+          <Route path="/auth/github/callback" element={<GitHubCallback />} />
         </Routes>
       </Router>
     </GoogleOAuthProvider>
