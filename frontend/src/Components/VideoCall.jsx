@@ -35,7 +35,7 @@ const VideoCall = ({targetEmail}) => {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io('https://taskify-e5u2.onrender.com', {
       transports: ['websocket'],
       forceNew: true
     });

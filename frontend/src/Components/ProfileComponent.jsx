@@ -44,7 +44,7 @@ const ProfileComponent = () => {
                     return;
                 }
 
-                const response = await axios.get("http://localhost:5000/api/employee/profile", {
+                const response = await axios.get("https://taskify-e5u2.onrender.com/api/employee/profile", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -174,7 +174,7 @@ const ProfileComponent = () => {
             console.log("Sending profile update with data:", formDataToSend);
 
             const response = await axios.put(
-                "http://localhost:5000/api/employee/profile",
+                "https://taskify-e5u2.onrender.com/api/employee/profile",
                 formDataToSend,
                 {
                     headers: {

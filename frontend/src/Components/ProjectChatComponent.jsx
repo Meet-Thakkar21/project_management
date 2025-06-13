@@ -7,8 +7,9 @@ import { BiArrowBack, BiSend, BiLoaderAlt, BiSmile, BiImage, BiPencil, BiX, BiCh
 import EmojiPicker from 'emoji-picker-react';
 import moment from 'moment';
 
+const BackendUrl = "https://taskify-e5u2.onrender.com"  
 // Connect to the socket server
-const socket = io("http://localhost:5000", {
+const socket = io(`${BackendUrl}`, {
     transports: ["websocket"],
     reconnectionAttempts: 5,
     timeout: 10000,
@@ -21,7 +22,7 @@ socket.on("connect", () => {
 socket.on("connect_error", (err) => {
     console.error("Connection Error:", err);
 });
-
+  
 function ProjectChat() {
     const { projectId } = useParams();
     const [project, setProject] = useState(null);
@@ -63,7 +64,7 @@ function ProjectChat() {
     const videoInputRef = useRef(null);
     const navigate = useNavigate();
     const [currentUser, setCurrentUser] = useState(null);
-
+  
     useEffect(() => {
         const token = localStorage.getItem('token');
         const userString = localStorage.getItem('user');
@@ -130,7 +131,7 @@ function ProjectChat() {
                 return;
             }
 
-            const projectResponse = await axios.get(`http://localhost:5000/api/projects/details/${projectId}`, {
+            const projectResponse = await axios.get(`${BackendUrl}/api/projects/details/${projectId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -148,7 +149,7 @@ function ProjectChat() {
                 return;
             }
             setIsLoadingMore(true);
-            const messagesResponse = await axios.get(`http://localhost:5000/api/chat/project/${projectId}?page=${pagination.currentPage}`, {
+            const messagesResponse = await axios.get(`${BackendUrl}/api/chat/project/${projectId}?page=${pagination.currentPage}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
@@ -199,7 +200,7 @@ function ProjectChat() {
             const token = localStorage.getItem("token");
 
             await axios.post(
-                `http://localhost:5000/api/chat/${projectId}/mark-read`,
+                `${BackendUrl}/api/chat/${projectId}/mark-read`,
                 {}, // Empty body
                 {
                     headers: {
@@ -255,7 +256,7 @@ function ProjectChat() {
         try {
             const token = localStorage.getItem('token');
             await axios.delete(
-                `http://localhost:5000/api/chat/delete/${deletingMessageId}`,
+                `${BackendUrl}/api/chat/delete/${deletingMessageId}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -296,7 +297,7 @@ function ProjectChat() {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.put(
-                `http://localhost:5000/api/chat/edit/${messageId}`,
+                `${BackendUrl}/api/chat/edit/${messageId}`,
                 { text: editMessageText },
                 {
                     headers: {
@@ -482,7 +483,7 @@ function ProjectChat() {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.post(
-                'http://localhost:5000/api/chat/upload-image',
+                `${BackendUrl}/api/chat/upload-image`,
                 formData,
                 {
                     headers: {
@@ -514,7 +515,7 @@ function ProjectChat() {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.post(
-                'http://localhost:5000/api/chat/upload-file',
+                `${BackendUrl}/api/chat/upload-file`,
                 formData,
                 {
                     headers: {
@@ -545,7 +546,7 @@ function ProjectChat() {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.post(
-                'http://localhost:5000/api/chat/upload-audio',
+                `${BackendUrl}/api/chat/upload-audio`,
                 formData,
                 {
                     headers: {
@@ -575,7 +576,7 @@ function ProjectChat() {
         try {
             const token = localStorage.getItem('token');
             const response = await axios.post(
-                'http://localhost:5000/api/chat/upload-video',
+                `${BackendUrl}/api/chat/upload-video`,
                 formData,
                 {
                     headers: {

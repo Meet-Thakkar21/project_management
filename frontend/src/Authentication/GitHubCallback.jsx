@@ -36,7 +36,7 @@ const GitHubCallback = () => {
         setStatus('Exchanging code for token...');
 
         // Exchange code for access token
-        const tokenResponse = await fetch('http://localhost:5000/api/auth/github/token', {
+        const tokenResponse = await fetch('https://taskify-e5u2.onrender.com/api/auth/github/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ code })
@@ -56,7 +56,7 @@ const GitHubCallback = () => {
         setStatus('Authenticating with GitHub...');
 
         // Use the access token to authenticate
-        const authResponse = await fetch('http://localhost:5000/api/auth/login', {
+        const authResponse = await fetch('https://taskify-e5u2.onrender.com/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ githubToken: tokenData.access_token })

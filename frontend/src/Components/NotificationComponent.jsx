@@ -34,7 +34,7 @@ const NotificationComponent = ({ pendingTasks, unreadMessages }) => {
       const token = localStorage.getItem("token");
 
       // This endpoint needs to be implemented to return message details
-      const response = await axios.get("http://localhost:5000/api/chat/unread-messages", {
+      const response = await axios.get("https://taskify-e5u2.onrender.com/api/chat/unread-messages", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,7 +58,7 @@ const NotificationComponent = ({ pendingTasks, unreadMessages }) => {
 
       // This matches your existing route
       await axios.post(
-        "http://localhost:5000/api/chat/mark-read",
+        "https://taskify-e5u2.onrender.com/api/chat/mark-read",
         { messageIds },
         {
           headers: {

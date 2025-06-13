@@ -21,7 +21,7 @@ const ProjectsComponent = () => {
                     return;
                 }
 
-                const response = await axios.get('http://localhost:5000/api/projects/user-projects', {
+                const response = await axios.get('https://taskify-e5u2.onrender.com/api/projects/user-projects', {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -47,7 +47,7 @@ const ProjectsComponent = () => {
         try {
             const token = localStorage.getItem('token');
 
-            const response = await axios.get(`http://localhost:5000/api/projects/details/${projectId}`, {
+            const response = await axios.get(`https://taskify-e5u2.onrender.com/api/projects/details/${projectId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

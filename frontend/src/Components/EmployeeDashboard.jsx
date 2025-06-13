@@ -34,7 +34,7 @@ const EmployeeDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const loadToastShown = useRef(false);
-
+  const BackenUrL = "https://taskify-e5u2.onrender.com"
   const showToast = (message, type) => {
     if (window.showToast) {
       window.showToast(message, type);
@@ -52,7 +52,7 @@ const EmployeeDashboard = () => {
           return;
         }
         // Fetch tasks
-        const tasksResponse = await axios.get("http://localhost:5000/api/employee/tasks", {
+        const tasksResponse = await axios.get("https://taskify-e5u2.onrender.com/api/employee/tasks", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -70,7 +70,7 @@ const EmployeeDashboard = () => {
         setTasks(formattedTasks);
 
         // Fetch teams
-        const teamsResponse = await axios.get("http://localhost:5000/api/employee/teams", {
+        const teamsResponse = await axios.get("https://taskify-e5u2.onrender.com/api/employee/teams", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -78,7 +78,7 @@ const EmployeeDashboard = () => {
         setTeams(teamsResponse.data);
 
         // Fetch user profile
-        const profileResponse = await axios.get("http://localhost:5000/api/employee/profile", {
+        const profileResponse = await axios.get("https://taskify-e5u2.onrender.com/api/employee/profile", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -86,7 +86,7 @@ const EmployeeDashboard = () => {
         setUserProfile(profileResponse.data);
 
         // Get count of unread messages across all projects
-        const messagesResponse = await axios.get("http://localhost:5000/api/chat/unread-count", {
+        const messagesResponse = await axios.get("https://taskify-e5u2.onrender.com/api/chat/unread-count", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -126,7 +126,7 @@ const EmployeeDashboard = () => {
 
       const newStatus = task.status === "completed" ? "pending" : "completed";
 
-      await axios.patch(`http://localhost:5000/api/employee/tasks/${taskId}/status`,
+      await axios.patch(`https://taskify-e5u2.onrender.com/api/employee/tasks/${taskId}/status`,
         { status: newStatus }, // Body
         { headers: { Authorization: `Bearer ${token}` } } // Headers should be separate
       );
@@ -148,7 +148,7 @@ const EmployeeDashboard = () => {
       const fetchUnreadCount = async () => {
         try {
           const token = localStorage.getItem("token");
-          const response = await axios.get("http://localhost:5000/api/chat/unread-count", {
+          const response = await axios.get("https://taskify-e5u2.onrender.com/api/chat/unread-count", {
             headers: {
               Authorization: `Bearer ${token}`,
             },

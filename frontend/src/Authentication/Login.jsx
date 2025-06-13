@@ -66,7 +66,7 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('https://taskify-e5u2.onrender.com/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -102,7 +102,7 @@ const Login = () => {
     const credential = response.credential;
     console.log('Google JWT Token:', credential);
 
-    fetch('http://localhost:5000/api/auth/login', {
+    fetch('https://taskify-e5u2.onrender.com/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ googleToken: credential }),
@@ -150,7 +150,7 @@ const Login = () => {
   const handleGithubCallback = async (code) => {
     try {
       // Exchange code for access token
-      const tokenResponse = await fetch('http://localhost:5000/api/auth/github/token', {
+      const tokenResponse = await fetch('https://taskify-e5u2.onrender.com/api/auth/github/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code })
@@ -160,7 +160,7 @@ const Login = () => {
       
       if (tokenData.access_token) {
         // Use the access token to authenticate
-        const response = await fetch('http://localhost:5000/api/auth/login', {
+        const response = await fetch('https://taskify-e5u2.onrender.com/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ githubToken: tokenData.access_token })

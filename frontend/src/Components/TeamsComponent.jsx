@@ -21,7 +21,7 @@ const TeamsComponent = () => {
                     return;
                 }
 
-                const response = await axios.get('http://localhost:5000/api/teams/user-teams', {
+                const response = await axios.get('https://taskify-e5u2.onrender.com/api/teams/user-teams', {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -43,7 +43,7 @@ const TeamsComponent = () => {
         try {
             const token = localStorage.getItem('token');
 
-            const response = await axios.get(`http://localhost:5000/api/teams/details/${teamId}`, {
+            const response = await axios.get(`https://taskify-e5u2.onrender.com/api/teams/details/${teamId}`, {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }

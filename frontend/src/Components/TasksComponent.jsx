@@ -21,7 +21,7 @@ const TasksComponent = () => {
                     return;
                 }
 
-                const tasksResponse = await axios.get("http://localhost:5000/api/employee/tasks", {
+                const tasksResponse = await axios.get("https://taskify-e5u2.onrender.com/api/employee/tasks", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
 
@@ -54,7 +54,7 @@ const TasksComponent = () => {
     const updateTaskStatus = async (taskId, newStatus) => {
         try {
             const token = localStorage.getItem("token");
-            await axios.patch(`http://localhost:5000/api/employee/tasks/${taskId}/status`,
+            await axios.patch(`https://taskify-e5u2.onrender.com/api/employee/tasks/${taskId}/status`,
                 { status: newStatus },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

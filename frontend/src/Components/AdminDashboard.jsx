@@ -71,7 +71,7 @@ const AdminDashboard = () => {
         return;
       }
 
-      const response = await axios.get("http://localhost:5000/api/projects/my-projects", {
+      const response = await axios.get("https://taskify-e5u2.onrender.com/api/projects/my-projects", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -106,7 +106,7 @@ const AdminDashboard = () => {
     try {
       // console.log(adminId);
 
-      const response = await axios.get(`http://localhost:5000/api/teams/${adminId}/members`);
+      const response = await axios.get(`https://taskify-e5u2.onrender.com/api/teams/${adminId}/members`);
       const uniqueMembers = new Set();
       const uniqueMembersArray = [];
 
@@ -131,7 +131,7 @@ const AdminDashboard = () => {
         showToast("No token found. Please log in again.", "error");
         return;
       }
-      const profileResponse = await axios.get("http://localhost:5000/api/employee/profile", {
+      const profileResponse = await axios.get("https://taskify-e5u2.onrender.com/api/employee/profile", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
     try {
       // console.log(adminId);
 
-      const response = await axios.get(`http://localhost:5000/api/tasks/${adminId}`);
+      const response = await axios.get(`https://taskify-e5u2.onrender.com/api/tasks/${adminId}`);
       setTasks(response.data);
       console.log("Tasks: " + response.data)
     } catch (error) {
@@ -173,7 +173,7 @@ const AdminDashboard = () => {
       };
       console.log(projectData);
       const response = await axios.post(
-        "http://localhost:5000/api/projects",
+        "https://taskify-e5u2.onrender.com/api/projects",
         projectData,
         {
           headers: {
@@ -246,7 +246,7 @@ const AdminDashboard = () => {
   const addMember = async () => {
     try {
       var status = "Activate";
-      const response = await axios.post(`http://localhost:5000/api/teams/${adminId}/add-member`, { email, role, status });
+      const response = await axios.post(`https://taskify-e5u2.onrender.com/api/teams/${adminId}/add-member`, { email, role, status });
 
       if (response.status === 200) {
         const newMember = {
@@ -301,7 +301,7 @@ const AdminDashboard = () => {
       };
 
       const response = await axios.post(
-        `http://localhost:5000/api/tasks/${adminId}`,
+        `https://taskify-e5u2.onrender.com/api/tasks/${adminId}`,
         taskData,
         {
           headers: {
@@ -335,7 +335,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.put(
-        `http://localhost:5000/api/tasks/${editingTask._id}`,
+        `https://taskify-e5u2.onrender.com/api/tasks/${editingTask._id}`,
         editingTask,
         {
           headers: {
@@ -370,7 +370,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.delete(
-        `http://localhost:5000/api/tasks/${taskToDelete}`,
+        `https://taskify-e5u2.onrender.com/api/tasks/${taskToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -399,7 +399,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.delete(
-        `http://localhost:5000/api/projects/${projectToDelete}`,
+        `https://taskify-e5u2.onrender.com/api/projects/${projectToDelete}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -430,7 +430,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem("token");
       const newStatus = currentStatus === "Activate" ? "Deactivate" : "Activate"; // Toggle status
 
-      await axios.put(`http://localhost:5000/api/teams/update-status/${memberId}`,
+      await axios.put(`https://taskify-e5u2.onrender.com/api/teams/update-status/${memberId}`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );

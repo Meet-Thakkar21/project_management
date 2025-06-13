@@ -27,7 +27,7 @@ const DocumentsComponent = () => {
                     return;
                 }
 
-                const response = await axios.get("http://localhost:5000/api/employee/documents", {
+                const response = await axios.get("https://taskify-e5u2.onrender.com/api/employee/documents", {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
