@@ -85,7 +85,7 @@ const Login = () => {
           if (data.user.role === 'project_admin') {
             window.location.href = '/admin-dashboard';
           } else {
-            window.location.href = '/dashboard';
+            window.location.href = '/employee-dashboard';
           }
         }, 1500);
       } else {

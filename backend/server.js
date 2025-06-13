@@ -1,7 +1,6 @@
-// backend/server.js
 const express = require('express');
-const http = require('http'); // For creating HTTP server
-const { Server } = require('socket.io'); // Import Socket.IO
+const http = require('http');
+const { Server } = require('socket.io');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth');
@@ -16,22 +15,23 @@ const User = require('./models/User');
 const Message = require('./models/Messages');
 const Project = require('./models/Projects');
 
-// Load environment variables
 dotenv.config();
-
-// Connect to MongoDB
 connectDB();
 
 const app = express();
-app.use(express.json()); // Middleware to parse JSON requests
+app.use(express.json());
 
-app.use(cors({
-  origin: 'http://localhost:3000', // Replace with your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  credentials: true,
-}));
+const FRONTEND_DEPLOYED = 'https://taskify-one-khaki.vercel.app';
+const FRONTEND_LOCAL = 'http://localhost:3000';
 
-// Routes
+app.use(
+  cors({
+    origin: [FRONTEND_DEPLOYED, FRONTEND_LOCAL],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true,
+  })
+);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/teams', teamRoutes);
@@ -40,39 +40,43 @@ app.use('/api/employee', employeeRoutes);
 app.use('/api/chat', messageRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Create HTTP Server - IMPORTANT: Use this server for both Express and Socket.IO
-const server = http.createServer(app);
+// Real-time call/email mapping
+const emailToSocketMap = new Map();
 
-// Integrate Socket.IO with the server
+const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
-    methods: ['GET', 'POST'],
+    origin: [FRONTEND_DEPLOYED, FRONTEND_LOCAL],
+    methods: ['GET', 'POST']
   }
 });
 
-// Socket.IO Event Handling
+// --- SOCKET.IO EVENT HANDLING ---
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
-  // Handle room joining
+  // --- Chat Room Events ---
   socket.on('joinRoom', ({ projectId, userId }) => {
     socket.join(projectId);
     console.log(`User ${userId} joined project room: ${projectId}`);
   });
 
-  // Handle room leaving
   socket.on('leaveRoom', ({ projectId, userId }) => {
     socket.leave(projectId);
     console.log(`User ${userId} left project room: ${projectId}`);
   });
 
-  // Send message
+  // --- Messaging Events ---
   socket.on('sendMessage', async (data) => {
-    const { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl, imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName } = data;
-    console.log("Message Received:", { projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl, imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName });
+    const {
+      projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl,
+      imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName
+    } = data;
+    console.log("Message Received:", {
+      projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl,
+      imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName
+    });
     try {
-      // Save message to database
       const newMessage = new Message({
         project: projectId,
         sender: senderId,
@@ -88,9 +92,7 @@ io.on('connection', (socket) => {
       });
       await newMessage.save();
 
-      // Update project messages
       const project = await Project.findById(projectId);
-
       if (!project.members.includes(senderId) && project.createdBy.toString() !== senderId) {
         return;
       }
@@ -101,7 +103,6 @@ io.on('connection', (socket) => {
 
         const sender = await User.findById(senderId);
 
-        // Broadcast message to all clients in the project room
         io.to(projectId).emit('receiveMessage', {
           _id: newMessage._id,
           text: newMessage.text,
@@ -119,34 +120,27 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Handle message updates
   socket.on('updateMessage', async (data) => {
     const { messageId, projectId, text, isEdited } = data;
     console.log("Message Update Received:", { messageId, projectId, text, isEdited });
 
     try {
-      // Find the message in the database
       const message = await Message.findById(messageId);
-
       if (!message) {
         console.error('Message not found');
         return;
       }
-
-      // Broadcast the updated message to all clients in the project room
       io.to(projectId).emit('messageUpdated', {
         _id: message._id,
         text: text,
         isEdited: isEdited,
         updatedAt: new Date()
       });
-
     } catch (error) {
       console.error('Error updating message:', error);
     }
   });
 
-  // Delete message event handler
   socket.on('deleteMessage', async (data) => {
     try {
       const { messageId, projectId } = data;
@@ -154,25 +148,57 @@ io.on('connection', (socket) => {
         console.error('Missing required fields for message deletion');
         return;
       }
-
-      // Broadcast to all clients in the project room that a message has been deleted
       io.to(projectId).emit('messageDeleted', messageId);
-      // console.log(`Broadcast message deletion: ${messageId} to project ${projectId}`);
-
     } catch (error) {
       console.error('Error in deleteMessage socket event:', error);
     }
   });
 
-  // Handle disconnection
+  // --- Call/RTC Events ---
+  socket.on('register-email', (email) => {
+    emailToSocketMap.set(email, socket.id);
+    console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
+  });
+
+  socket.on('initiate-call', ({ toEmail, offer }) => {
+    const targetSocketId = emailToSocketMap.get(toEmail);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('incoming-call', { from: socket.id, offer });
+    } else {
+      socket.emit('user-not-found', { email: toEmail });
+    }
+  });
+
+  socket.on('accept-call', ({ to, answer }) => {
+    console.log(`Call accepted by ${socket.id}, sending to ${to}`);
+    socket.to(to).emit('call-accepted', answer);
+  });
+
+  socket.on('candidate', ({ to, candidate }) => {
+    if (to) {
+      console.log(`ICE candidate from ${socket.id} to ${to}`);
+      socket.to(to).emit('candidate', candidate);
+    }
+  });
+
+  socket.on('end-call', ({ to }) => {
+    console.log(`Call ended by ${socket.id}`);
+    socket.to(to).emit('call-ended');
+  });
+
   socket.on('disconnect', () => {
+    for (const [email, id] of emailToSocketMap.entries()) {
+      if (id === socket.id) {
+        emailToSocketMap.delete(email);
+        console.log(`User with email ${email} disconnected`);
+        break;
+      }
+    }
     console.log('User disconnected:', socket.id);
   });
 });
 
 const PORT = process.env.PORT || 5000;
-
-// IMPORTANT: Use the 'server' to listen, not 'app'
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });

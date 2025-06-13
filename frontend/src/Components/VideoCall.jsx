@@ -35,7 +35,7 @@ const VideoCall = ({targetEmail}) => {
   };
 
   useEffect(() => {
-    socketRef.current = io('http://localhost:3001', {
+    socketRef.current = io('http://localhost:5000', {
       transports: ['websocket'],
       forceNew: true
     });
