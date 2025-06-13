@@ -11,17 +11,52 @@ const Login = () => {
 
   const [showProfileCompletion, setShowProfileCompletion] = useState(false);
   const [socialUserId, setSocialUserId] = useState(null);
+  const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
 
   const clientId = "480382669507-gat4q906qi4rlv61hnl9tpehfem6j3qm.apps.googleusercontent.com";
   const githubClientId = "Ov23liDLlOoHIjmk1dmK";
-  const githubRedirectUri = `${window.location.origin}/auth/github/callback`
+  const githubRedirectUri = `${window.location.origin}/auth/github/callback`;
 
   useEffect(() => {
-    // Initialize Google Sign-In
-    window.google?.accounts.id.initialize({
-      client_id: clientId,
-      callback: handleGoogleSuccess,
-    });
+    // Initialize Google Sign-In with proper script loading
+    const initializeGoogleSignIn = () => {
+      // Check if Google Identity Services is already loaded
+      if (window.google?.accounts?.id) {
+        setupGoogleSignIn();
+        return;
+      }
+
+      // Load Google Identity Services script
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.onload = setupGoogleSignIn;
+      script.onerror = () => {
+        console.error('Failed to load Google Identity Services script');
+        window.showToast?.('Failed to load Google Sign-In', 'error', 4000);
+      };
+      document.head.appendChild(script);
+    };
+
+    const setupGoogleSignIn = () => {
+      try {
+        console.log('Setting up Google Sign-In...');
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleGoogleSuccess,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+        setIsGoogleLoaded(true);
+        console.log('Google Sign-In initialized successfully');
+      } catch (error) {
+        console.error('Error initializing Google Sign-In:', error);
+        window.showToast?.('Error initializing Google Sign-In', 'error', 4000);
+      }
+    };
+
+    initializeGoogleSignIn();
 
     // Check for GitHub OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
@@ -30,7 +65,7 @@ const Login = () => {
 
     if (error) {
       console.error('GitHub OAuth error:', error);
-      window.showToast('GitHub login failed', 'error', 4000);
+      window.showToast?.('GitHub login failed', 'error', 4000);
       // Clean up URL
       window.history.replaceState({}, document.title, '/login');
       return;
@@ -47,10 +82,15 @@ const Login = () => {
     if (profileCompletion === 'true') {
       const pendingData = localStorage.getItem('pendingProfileCompletion');
       if (pendingData) {
-        const { userId } = JSON.parse(pendingData);
-        setSocialUserId(userId);
-        setShowProfileCompletion(true);
-        localStorage.removeItem('pendingProfileCompletion');
+        try {
+          const { userId } = JSON.parse(pendingData);
+          setSocialUserId(userId);
+          setShowProfileCompletion(true);
+          localStorage.removeItem('pendingProfileCompletion');
+        } catch (error) {
+          console.error('Error parsing pending profile completion data:', error);
+          localStorage.removeItem('pendingProfileCompletion');
+        }
       }
     }
   }, []);
@@ -79,7 +119,7 @@ const Login = () => {
         localStorage.setItem('user', JSON.stringify(data.user));
         localStorage.setItem('email', data.user.email);
 
-        window.showToast('Logged in successfully', 'success', 3000);
+        window.showToast?.('Logged in successfully', 'success', 3000);
 
         setTimeout(() => {
           if (data.user.role === 'project_admin') {
@@ -89,26 +129,41 @@ const Login = () => {
           }
         }, 1500);
       } else {
-        window.showToast(data.message || 'Login failed', 'error', 4000);
+        window.showToast?.(data.message || 'Login failed', 'error', 4000);
         console.error('Login error:', data.message);
       }
     } catch (error) {
-      window.showToast('An error occurred. Please try again later.', 'error', 4000);
+      window.showToast?.('An error occurred. Please try again later.', 'error', 4000);
       console.error('Server error:', error);
     }
   };
 
   const handleGoogleSuccess = (response) => {
+    console.log('Google Sign-In Success:', response);
     const credential = response.credential;
-    console.log('Google JWT Token:', credential);
+    
+    if (!credential) {
+      console.error('No credential received from Google');
+      window.showToast?.('Google login failed - no credential received', 'error', 4000);
+      return;
+    }
+
+    console.log('Google JWT Token received');
 
     fetch('https://taskify-e5u2.onrender.com/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ googleToken: credential }),
     })
-      .then(res => res.json())
+      .then(res => {
+        console.log('Server response status:', res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('Server response data:', data);
         if (data.needsProfileCompletion) {
           // Show profile completion form
           setSocialUserId(data.userId);
@@ -117,7 +172,7 @@ const Login = () => {
           // User already has complete profile
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          window.showToast('Logged in successfully', 'success', 3000);
+          window.showToast?.('Logged in successfully', 'success', 3000);
 
           setTimeout(() => {
             // Redirect based on role
@@ -128,21 +183,70 @@ const Login = () => {
             }
           }, 1500);
         } else {
-          window.showToast(data.message || 'Login failed', 'error', 4000);
+          window.showToast?.(data.message || 'Login failed', 'error', 4000);
           console.error('Login failed:', data.message);
         }
       })
       .catch(error => {
-        window.showToast('An error occurred. Please try again later.', 'error', 4000);
-        console.error('Server error:', error);
+        window.showToast?.('An error occurred during Google login. Please try again.', 'error', 4000);
+        console.error('Google login server error:', error);
       });
   };
 
+  const handleGoogleLogin = () => {
+    console.log('Google login button clicked');
+    console.log('isGoogleLoaded:', isGoogleLoaded);
+    console.log('window.google available:', !!window.google?.accounts?.id);
+    
+    if (!isGoogleLoaded || !window.google?.accounts?.id) {
+      console.error('Google Sign-In not loaded yet');
+      window.showToast?.('Google Sign-In is still loading, please wait a moment and try again', 'error', 3000);
+      return;
+    }
+
+    try {
+      // Use prompt() method to show the account chooser
+      window.google.accounts.id.prompt((notification) => {
+        console.log('Google prompt notification:', notification);
+        
+        if (notification.isNotDisplayed()) {
+          console.log('Google prompt was not displayed - reason:', notification.getNotDisplayedReason());
+          // Try alternative approach - render button temporarily
+          const tempDiv = document.createElement('div');
+          tempDiv.style.position = 'absolute';
+          tempDiv.style.top = '-9999px';
+          tempDiv.style.left = '-9999px';
+          document.body.appendChild(tempDiv);
+          
+          window.google.accounts.id.renderButton(tempDiv, {
+            theme: 'outline',
+            size: 'large',
+            width: '200'
+          });
+          
+          // Click the rendered button programmatically
+          setTimeout(() => {
+            const button = tempDiv.querySelector('div[role="button"]');
+            if (button) {
+              button.click();
+            }
+            document.body.removeChild(tempDiv);
+          }, 100);
+        } else if (notification.isSkippedMoment()) {
+          console.log('Google prompt was skipped');
+          window.showToast?.('Google Sign-In was cancelled', 'info', 3000);
+        }
+      });
+    } catch (error) {
+      console.error('Error showing Google prompt:', error);
+      window.showToast?.('Error with Google Sign-In', 'error', 4000);
+    }
+  };
+
   const handleGithubLogin = () => {
-     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(githubRedirectUri)}`;
-  
-      console.log('GitHub Auth URL:', githubAuthUrl);
-      console.log('Redirect URI:', githubRedirectUri);
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${githubClientId}&scope=user:email&redirect_uri=${encodeURIComponent(githubRedirectUri)}`;
+    console.log('GitHub Auth URL:', githubAuthUrl);
+    console.log('Redirect URI:', githubRedirectUri);
     // Redirect to GitHub OAuth (same window)
     window.location.href = githubAuthUrl;
   };
@@ -174,7 +278,7 @@ const Login = () => {
         } else if (data.token) {
           localStorage.setItem('token', data.token);
           localStorage.setItem('user', JSON.stringify(data.user));
-          window.showToast('Logged in successfully', 'success', 3000);
+          window.showToast?.('Logged in successfully', 'success', 3000);
 
           setTimeout(() => {
             if (data.user.role === 'project_admin') {
@@ -184,14 +288,14 @@ const Login = () => {
             }
           }, 1500);
         } else {
-          window.showToast(data.message || 'GitHub login failed', 'error', 4000);
+          window.showToast?.(data.message || 'GitHub login failed', 'error', 4000);
         }
       } else {
-        window.showToast('Failed to get GitHub access token', 'error', 4000);
+        window.showToast?.('Failed to get GitHub access token', 'error', 4000);
       }
     } catch (error) {
       console.error('GitHub login error:', error);
-      window.showToast('GitHub login failed', 'error', 4000);
+      window.showToast?.('GitHub login failed', 'error', 4000);
     }
   };
 
@@ -285,11 +389,15 @@ const Login = () => {
             <div className="mt-6 grid grid-cols-2 gap-4">
               {/* Google Login Button */}
               <button
-                onClick={() => window.google?.accounts.id.prompt()}
-                className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all"
+                onClick={handleGoogleLogin}
+                disabled={!isGoogleLoaded}
+                className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!isGoogleLoaded ? "Google Sign-In is loading..." : "Sign in with Google"}
               >
                 <FaGoogle className="text-gray-600 mr-2" />
-                <span className="text-gray-700">Google</span>
+                <span className="text-gray-700">
+                  {isGoogleLoaded ? 'Google' : 'Loading...'}
+                </span>
               </button>
 
               {/* GitHub Login Button */}
