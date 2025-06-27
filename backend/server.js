@@ -155,7 +155,7 @@ io.on('connection', (socket) => {
   });
 
   // --- Call/RTC Events ---
-// --- Call/RTC Events ---
+
 socket.on('register-email', (email) => {
   emailToSocketMap.set(email, socket.id);
   console.log(`Registered email: ${email} with socket ID: ${socket.id}`);

@@ -93,7 +93,7 @@ const VideoCall = ({targetEmail}) => {
     peerConnectionRef.current = pc;
 
     pc.onicecandidate = (event) => {
-      if (event.candidate) {
+      if (event.candidate && currentCallId) {
         console.log('Sending ICE candidate to:', currentCallId);
         socketRef.current.emit('candidate', {
           to: currentCallId,
