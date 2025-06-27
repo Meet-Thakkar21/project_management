@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import io from 'socket.io-client';
-import { FaPhone, FaPhoneSlash, FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash }
- from 'react-icons/fa';
- import { useSearchParams } from 'react-router-dom';
+import { FaPhone, FaPhoneSlash, FaMicrophone, FaMicrophoneSlash, FaVideo, FaVideoSlash } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';
 import "../Styles/videocall.css";
 
 const VideoCall = ({targetEmail}) => {
@@ -21,6 +20,9 @@ const VideoCall = ({targetEmail}) => {
   const peerConnectionRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+
+  // ICE candidate buffer for race condition handling
+  const iceCandidateBuffer = useRef([]);
 
   const iceServers = {
     iceServers: [
@@ -41,21 +43,16 @@ const VideoCall = ({targetEmail}) => {
     });
 
     socketRef.current.on('connect', () => {
-      console.log('Connected with ID:', socketRef.current.id);
       const userEmail = localStorage.email;
-      console.log(userEmail);      
       socketRef.current.emit('register-email', userEmail);
     });
 
     socketRef.current.on('incoming-call', async ({ from, offer }) => {
-      console.log('Incoming call from email:', from);
       setIncomingCall({ from, offer });
       setCurrentCallId(from);
     });
-    
 
     socketRef.current.on('call-accepted', async (answer) => {
-      console.log('Call accepted, setting remote description');
       try {
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
       } catch (error) {
@@ -64,7 +61,6 @@ const VideoCall = ({targetEmail}) => {
     });
 
     socketRef.current.on('candidate', async (candidate) => {
-      console.log('Received ICE candidate');
       try {
         if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
@@ -83,38 +79,56 @@ const VideoCall = ({targetEmail}) => {
       socketRef.current?.disconnect();
     };
   }, []);
-  const iceCandidateBuffer = useRef([]);
+
+  // Helper: send any buffered ICE candidates after currentCallId is set
+  const sendBufferedCandidates = (callId) => {
+    if (callId && iceCandidateBuffer.current.length > 0) {
+      iceCandidateBuffer.current.forEach(candidate => {
+        socketRef.current.emit('candidate', {
+          to: callId,
+          candidate
+        });
+      });
+      iceCandidateBuffer.current = [];
+    }
+  };
+
+  // Always create a new peer connection for each call
   const createPeerConnection = () => {
+    // Clean up any old peer connection
     if (peerConnectionRef.current) {
+      peerConnectionRef.current.onicecandidate = null;
+      peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.oniceconnectionstatechange = null;
       peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
     }
 
     const pc = new RTCPeerConnection(iceServers);
     peerConnectionRef.current = pc;
 
-      pc.onicecandidate = (event) => {
-    if (event.candidate) {
-      if (currentCallId) {
-        console.log('Sending ICE candidate to:', currentCallId);
-        socketRef.current.emit('candidate', {
-          to: currentCallId,
-          candidate: event.candidate
-        });
-      } else {
-        iceCandidateBuffer.current.push(event.candidate);
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        if (currentCallId) {
+          socketRef.current.emit('candidate', {
+            to: currentCallId,
+            candidate: event.candidate
+          });
+        } else {
+          iceCandidateBuffer.current.push(event.candidate);
+        }
       }
-    }
-  };
+    };
 
     pc.ontrack = (event) => {
-      console.log('Received remote track');
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
 
     pc.oniceconnectionstatechange = () => {
-      console.log('ICE Connection State:', pc.iceConnectionState);
+      // Debug log
+      // console.log('ICE Connection State:', pc.iceConnectionState);
     };
 
     return pc;
@@ -132,7 +146,6 @@ const VideoCall = ({targetEmail}) => {
       }
       return stream;
     } catch (error) {
-      console.error('Error accessing media devices:', error);
       alert('Cannot access camera or microphone');
     }
   };
@@ -146,7 +159,7 @@ const VideoCall = ({targetEmail}) => {
     try {
       setCurrentCallId(targetUserId);
       setIsInCall(true);
-      
+
       const stream = await startLocalStream();
       const pc = createPeerConnection();
 
@@ -160,13 +173,14 @@ const VideoCall = ({targetEmail}) => {
       });
       await pc.setLocalDescription(offer);
 
-      console.log('Sending call offer to:', targetUserId);
+      // Send any buffered ICE candidates now that currentCallId is set
+      sendBufferedCandidates(targetUserId);
+
       socketRef.current.emit('initiate-call', {
-        toEmail: targetUserId, 
+        toEmail: targetUserId,
         offer: pc.localDescription
       });
     } catch (error) {
-      console.error('Error initiating call:', error);
       cleanupCall();
     }
   };
@@ -176,6 +190,8 @@ const VideoCall = ({targetEmail}) => {
 
     try {
       setIsInCall(true);
+      setCurrentCallId(incomingCall.from);
+
       const stream = await startLocalStream();
       const pc = createPeerConnection();
 
@@ -188,7 +204,9 @@ const VideoCall = ({targetEmail}) => {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      console.log('Sending answer to:', incomingCall.from);
+      // Send any buffered ICE candidates now that currentCallId is set
+      sendBufferedCandidates(incomingCall.from);
+
       socketRef.current.emit('accept-call', {
         to: incomingCall.from,
         answer: pc.localDescription
@@ -196,18 +214,23 @@ const VideoCall = ({targetEmail}) => {
 
       setIncomingCall(null);
     } catch (error) {
-      console.error('Error accepting call:', error);
       cleanupCall();
     }
   };
 
+  // Robust cleanup
   const cleanupCall = () => {
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
     }
     if (peerConnectionRef.current) {
+      peerConnectionRef.current.onicecandidate = null;
+      peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.oniceconnectionstatechange = null;
       peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
     }
+    iceCandidateBuffer.current = [];
     setLocalStream(null);
     setIsInCall(false);
     setIncomingCall(null);
@@ -245,15 +268,15 @@ const VideoCall = ({targetEmail}) => {
     <div className="video-call-container">
       <h2 className="user-id">Your ID: {userId}</h2>
       <div className="call-controls">
-     {!emailFromQuery && (
-  <input
-    type="text"
-    value={targetUserId}
-    onChange={(e) => setTargetUserId(e.target.value)}
-    placeholder="Enter email ID to call"
-    className="input-field"
-  />
-)}
+        {!emailFromQuery && (
+          <input
+            type="text"
+            value={targetUserId}
+            onChange={(e) => setTargetUserId(e.target.value)}
+            placeholder="Enter email ID to call"
+            className="input-field"
+          />
+        )}
 
         <button
           onClick={initiateCall}
