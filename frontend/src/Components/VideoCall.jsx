@@ -92,15 +92,20 @@ const VideoCall = ({targetEmail}) => {
     const pc = new RTCPeerConnection(iceServers);
     peerConnectionRef.current = pc;
 
-    pc.onicecandidate = (event) => {
-      if (event.candidate && currentCallId) {
+      pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      if (currentCallId) {
         console.log('Sending ICE candidate to:', currentCallId);
         socketRef.current.emit('candidate', {
           to: currentCallId,
           candidate: event.candidate
         });
+      } else {
+        iceCandidateBuffer.current.push(event.candidate);
       }
-    };
+    }
+  };
+
 
     pc.ontrack = (event) => {
       console.log('Received remote track');
