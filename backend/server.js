@@ -155,13 +155,15 @@ io.on('connection', (socket) => {
   });
 
   // --- Call/RTC Events ---
- socket.on('register-email', (email) => {
+// --- Call/RTC Events ---
+socket.on('register-email', (email) => {
   emailToSocketMap.set(email, socket.id);
   console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
 });
 
 socket.on('initiate-call', ({ toEmail, offer }) => {
   const targetSocketId = emailToSocketMap.get(toEmail);
+  // Find caller's email based on socket.id
   const fromEmail = Array.from(emailToSocketMap.entries()).find(([email, id]) => id === socket.id)?.[0];
   if (targetSocketId && fromEmail) {
     io.to(targetSocketId).emit('incoming-call', { from: fromEmail, offer }); // <--- send EMAIL, not socket id
