@@ -103,45 +103,44 @@ const VideoCall = ({targetEmail}) => {
 
   // Always create a new peer connection for each call
   const createPeerConnection = () => {
-    // Clean up any old peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.onicecandidate = null;
-      peerConnectionRef.current.ontrack = null;
-      peerConnectionRef.current.oniceconnectionstatechange = null;
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
+  if (peerConnectionRef.current) {
+    peerConnectionRef.current.onicecandidate = null;
+    peerConnectionRef.current.ontrack = null;
+    peerConnectionRef.current.oniceconnectionstatechange = null;
+    peerConnectionRef.current.close();
+    peerConnectionRef.current = null;
+  }
+
+  const pc = new RTCPeerConnection(iceServers);
+  peerConnectionRef.current = pc;
+
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      console.log('Generated ICE candidate:', event.candidate);
+      if (currentCallId) {
+        socketRef.current.emit('candidate', {
+          to: currentCallId,
+          candidate: event.candidate
+        });
+      } else {
+        iceCandidateBuffer.current.push(event.candidate);
+      }
     }
-
-    const pc = new RTCPeerConnection(iceServers);
-    peerConnectionRef.current = pc;
-
-    pc.onicecandidate = (event) => {
-      if (event.candidate) {
-        if (currentCallId) {
-          socketRef.current.emit('candidate', {
-            to: currentCallId,
-            candidate: event.candidate
-          });
-        } else {
-          iceCandidateBuffer.current.push(event.candidate);
-        }
-      }
-    };
-
-    pc.ontrack = (event) => {
-      if (remoteVideoRef.current && event.streams[0]) {
-        remoteVideoRef.current.srcObject = event.streams[0];
-      }
-    };
-
-    pc.oniceconnectionstatechange = () => {
-      // Debug log
-      // console.log('ICE Connection State:', pc.iceConnectionState);
-    };
-
-    return pc;
   };
 
+  pc.ontrack = (event) => {
+    console.log('ontrack fired. Remote stream:', event.streams[0]);
+    if (remoteVideoRef.current && event.streams[0]) {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    }
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    console.log('ICE connection state:', pc.iceConnectionState);
+  };
+
+  return pc;
+};
   const startLocalStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
