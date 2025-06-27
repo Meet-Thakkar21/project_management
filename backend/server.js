@@ -145,42 +145,50 @@ io.on('connection', (socket) => {
 
   // --- Call/RTC Events (EMAIL-BASED, robust) ---
   socket.on('register-email', (email) => {
-    emailToSocketMap.set(email, socket.id);
-    socketToEmailMap.set(socket.id, email);
-    console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
-  });
+  if (!email || typeof email !== 'string' || email.trim() === '') {
+    console.log(`Refused to register null/empty email for socket ${socket.id}`);
+    return;
+  }
+  emailToSocketMap.set(email, socket.id);
+  socketToEmailMap.set(socket.id, email);
+  console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
+});
 
   socket.on('initiate-call', ({ toEmail, offer }) => {
-    const targetSocketId = emailToSocketMap.get(toEmail);
-    const fromEmail = socketToEmailMap.get(socket.id);
-    if (targetSocketId && fromEmail) {
-      io.to(targetSocketId).emit('incoming-call', { from: fromEmail, offer });
-    } else {
-      socket.emit('user-not-found', { email: toEmail });
-    }
-  });
+  const targetSocketId = emailToSocketMap.get(toEmail);
+  const fromEmail = socketToEmailMap.get(socket.id);
+  if (targetSocketId && fromEmail) {
+    io.to(targetSocketId).emit('incoming-call', { from: fromEmail, offer });
+    console.log(`Call initiated from ${fromEmail} to ${toEmail}`);
+  } else {
+    socket.emit('user-not-found', { email: toEmail });
+    console.warn(`initiate-call failed: fromEmail=${fromEmail}, toEmail=${toEmail}, targetSocketId=${targetSocketId}`);
+  }
+});
 
-  socket.on('accept-call', ({ to, answer }) => {
-    const targetSocketId = emailToSocketMap.get(to); // "to" is email
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('call-accepted', answer);
-    }
-  });
+socket.on('accept-call', ({ to, answer }) => {
+  const targetSocketId = emailToSocketMap.get(to);
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('call-accepted', answer);
+    console.log(`Call accepted: answer sent to ${to}`);
+  }
+});
 
-  socket.on('candidate', ({ to, candidate }) => {
-    const targetSocketId = emailToSocketMap.get(to); // "to" is email
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('candidate', candidate);
-    }
-  });
+socket.on('candidate', ({ to, candidate }) => {
+  const targetSocketId = emailToSocketMap.get(to);
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('candidate', candidate);
+    // You can log candidate details if needed
+  }
+});
 
-  socket.on('end-call', ({ to }) => {
-    const targetSocketId = emailToSocketMap.get(to);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('call-ended');
-    }
-  });
-
+socket.on('end-call', ({ to }) => {
+  const targetSocketId = emailToSocketMap.get(to);
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('call-ended');
+    console.log(`Call ended sent to ${to}`);
+  }
+});
   socket.on('disconnect', () => {
     const email = socketToEmailMap.get(socket.id);
     if (email) {

@@ -37,15 +37,23 @@ const VideoCall = ({targetEmail}) => {
   };
 
   useEffect(() => {
-    socketRef.current = io('https://taskify-e5u2.onrender.com', {
-      transports: ['websocket'],
-      forceNew: true
-    });
+  socketRef.current = io('https://taskify-e5u2.onrender.com', {
+    transports: ['websocket'],
+    forceNew: true
+  });
 
-    socketRef.current.on('connect', () => {
-      const userEmail = localStorage.email;
+  socketRef.current.on('connect', () => {
+    const userEmail = localStorage.email;
+    if (userEmail && typeof userEmail === 'string' && userEmail.trim() !== '') {
+      console.log("Registering email:", userEmail);
       socketRef.current.emit('register-email', userEmail);
-    });
+      setUserId(userEmail);
+    } else {
+      alert("Your email is not set. Please login again.");
+      console.error("User email missing, can't register-email");
+    }
+  });
+
 
     socketRef.current.on('incoming-call', async ({ from, offer }) => {
       setIncomingCall({ from, offer });
