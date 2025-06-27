@@ -155,47 +155,52 @@ io.on('connection', (socket) => {
   });
 
   // --- Call/RTC Events ---
-  socket.on('register-email', (email) => {
-    emailToSocketMap.set(email, socket.id);
-    console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
-  });
+ socket.on('register-email', (email) => {
+  emailToSocketMap.set(email, socket.id);
+  console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
+});
 
-  socket.on('initiate-call', ({ toEmail, offer }) => {
-    const targetSocketId = emailToSocketMap.get(toEmail);
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('incoming-call', { from: socket.id, offer });
-    } else {
-      socket.emit('user-not-found', { email: toEmail });
+socket.on('initiate-call', ({ toEmail, offer }) => {
+  const targetSocketId = emailToSocketMap.get(toEmail);
+  const fromEmail = Array.from(emailToSocketMap.entries()).find(([email, id]) => id === socket.id)?.[0];
+  if (targetSocketId && fromEmail) {
+    io.to(targetSocketId).emit('incoming-call', { from: fromEmail, offer }); // <--- send EMAIL, not socket id
+  } else {
+    socket.emit('user-not-found', { email: toEmail });
+  }
+});
+
+socket.on('accept-call', ({ to, answer }) => {
+  const targetSocketId = emailToSocketMap.get(to); // "to" is email
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('call-accepted', answer);
+  }
+});
+
+socket.on('candidate', ({ to, candidate }) => {
+  const targetSocketId = emailToSocketMap.get(to); // "to" is email
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('candidate', candidate);
+  }
+});
+
+socket.on('end-call', ({ to }) => {
+  const targetSocketId = emailToSocketMap.get(to);
+  if (targetSocketId) {
+    io.to(targetSocketId).emit('call-ended');
+  }
+});
+
+socket.on('disconnect', () => {
+  for (const [email, id] of emailToSocketMap.entries()) {
+    if (id === socket.id) {
+      emailToSocketMap.delete(email);
+      console.log(`User with email ${email} disconnected`);
+      break;
     }
-  });
-
-  socket.on('accept-call', ({ to, answer }) => {
-    console.log(`Call accepted by ${socket.id}, sending to ${to}`);
-    socket.to(to).emit('call-accepted', answer);
-  });
-
-  socket.on('candidate', ({ to, candidate }) => {
-    if (to) {
-      console.log(`ICE candidate from ${socket.id} to ${to}`);
-      socket.to(to).emit('candidate', candidate);
-    }
-  });
-
-  socket.on('end-call', ({ to }) => {
-    console.log(`Call ended by ${socket.id}`);
-    socket.to(to).emit('call-ended');
-  });
-
-  socket.on('disconnect', () => {
-    for (const [email, id] of emailToSocketMap.entries()) {
-      if (id === socket.id) {
-        emailToSocketMap.delete(email);
-        console.log(`User with email ${email} disconnected`);
-        break;
-      }
-    }
-    console.log('User disconnected:', socket.id);
-  });
+  }
+  console.log('User disconnected:', socket.id);
+});
 });
 
 const PORT = process.env.PORT || 5000;
