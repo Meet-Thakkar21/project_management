@@ -83,7 +83,7 @@ const VideoCall = ({targetEmail}) => {
       socketRef.current?.disconnect();
     };
   }, []);
-
+  const iceCandidateBuffer = useRef([]);
   const createPeerConnection = () => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
