@@ -42,6 +42,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Real-time call/email mapping
 const emailToSocketMap = new Map();
+const socketToEmailMap = new Map();
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -72,10 +73,6 @@ io.on('connection', (socket) => {
       projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl,
       imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName
     } = data;
-    console.log("Message Received:", {
-      projectId, senderId, text, imageUrl, pdfUrl, audioUrl, videoUrl,
-      imageOriginalName, pdfOriginalName, audioOriginalName, videoOriginalName
-    });
     try {
       const newMessage = new Message({
         project: projectId,
@@ -122,14 +119,9 @@ io.on('connection', (socket) => {
 
   socket.on('updateMessage', async (data) => {
     const { messageId, projectId, text, isEdited } = data;
-    console.log("Message Update Received:", { messageId, projectId, text, isEdited });
-
     try {
       const message = await Message.findById(messageId);
-      if (!message) {
-        console.error('Message not found');
-        return;
-      }
+      if (!message) return;
       io.to(projectId).emit('messageUpdated', {
         _id: message._id,
         text: text,
@@ -144,65 +136,60 @@ io.on('connection', (socket) => {
   socket.on('deleteMessage', async (data) => {
     try {
       const { messageId, projectId } = data;
-      if (!messageId || !projectId) {
-        console.error('Missing required fields for message deletion');
-        return;
-      }
+      if (!messageId || !projectId) return;
       io.to(projectId).emit('messageDeleted', messageId);
     } catch (error) {
       console.error('Error in deleteMessage socket event:', error);
     }
   });
 
-  // --- Call/RTC Events ---
+  // --- Call/RTC Events (EMAIL-BASED, robust) ---
+  socket.on('register-email', (email) => {
+    emailToSocketMap.set(email, socket.id);
+    socketToEmailMap.set(socket.id, email);
+    console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
+  });
 
-socket.on('register-email', (email) => {
-  emailToSocketMap.set(email, socket.id);
-  console.log(`Registered email: ${email} with socket ID: ${socket.id}`);
-});
-
-socket.on('initiate-call', ({ toEmail, offer }) => {
-  const targetSocketId = emailToSocketMap.get(toEmail);
-  // Find caller's email based on socket.id
-  const fromEmail = Array.from(emailToSocketMap.entries()).find(([email, id]) => id === socket.id)?.[0];
-  if (targetSocketId && fromEmail) {
-    io.to(targetSocketId).emit('incoming-call', { from: fromEmail, offer }); // <--- send EMAIL, not socket id
-  } else {
-    socket.emit('user-not-found', { email: toEmail });
-  }
-});
-
-socket.on('accept-call', ({ to, answer }) => {
-  const targetSocketId = emailToSocketMap.get(to); // "to" is email
-  if (targetSocketId) {
-    io.to(targetSocketId).emit('call-accepted', answer);
-  }
-});
-
-socket.on('candidate', ({ to, candidate }) => {
-  const targetSocketId = emailToSocketMap.get(to); // "to" is email
-  if (targetSocketId) {
-    io.to(targetSocketId).emit('candidate', candidate);
-  }
-});
-
-socket.on('end-call', ({ to }) => {
-  const targetSocketId = emailToSocketMap.get(to);
-  if (targetSocketId) {
-    io.to(targetSocketId).emit('call-ended');
-  }
-});
-
-socket.on('disconnect', () => {
-  for (const [email, id] of emailToSocketMap.entries()) {
-    if (id === socket.id) {
-      emailToSocketMap.delete(email);
-      console.log(`User with email ${email} disconnected`);
-      break;
+  socket.on('initiate-call', ({ toEmail, offer }) => {
+    const targetSocketId = emailToSocketMap.get(toEmail);
+    const fromEmail = socketToEmailMap.get(socket.id);
+    if (targetSocketId && fromEmail) {
+      io.to(targetSocketId).emit('incoming-call', { from: fromEmail, offer });
+    } else {
+      socket.emit('user-not-found', { email: toEmail });
     }
-  }
-  console.log('User disconnected:', socket.id);
-});
+  });
+
+  socket.on('accept-call', ({ to, answer }) => {
+    const targetSocketId = emailToSocketMap.get(to); // "to" is email
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-accepted', answer);
+    }
+  });
+
+  socket.on('candidate', ({ to, candidate }) => {
+    const targetSocketId = emailToSocketMap.get(to); // "to" is email
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('candidate', candidate);
+    }
+  });
+
+  socket.on('end-call', ({ to }) => {
+    const targetSocketId = emailToSocketMap.get(to);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('call-ended');
+    }
+  });
+
+  socket.on('disconnect', () => {
+    const email = socketToEmailMap.get(socket.id);
+    if (email) {
+      emailToSocketMap.delete(email);
+      socketToEmailMap.delete(socket.id);
+      console.log(`User with email ${email} disconnected`);
+    }
+    console.log('User disconnected:', socket.id);
+  });
 });
 
 const PORT = process.env.PORT || 5000;
