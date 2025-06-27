@@ -106,7 +106,6 @@ const VideoCall = ({targetEmail}) => {
     }
   };
 
-
     pc.ontrack = (event) => {
       console.log('Received remote track');
       if (remoteVideoRef.current && event.streams[0]) {
