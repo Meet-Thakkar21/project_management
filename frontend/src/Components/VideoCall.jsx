@@ -128,12 +128,13 @@ const VideoCall = ({targetEmail}) => {
     }
   };
 
-  pc.ontrack = (event) => {
-    console.log('ontrack fired. Remote stream:', event.streams[0]);
-    if (remoteVideoRef.current && event.streams[0]) {
-      remoteVideoRef.current.srcObject = event.streams[0];
-    }
-  };
+ pc.ontrack = (event) => {
+  console.log('ontrack fired. Remote stream:', event.streams[0]);
+  if (remoteVideoRef.current && event.streams[0]) {
+    remoteVideoRef.current.srcObject = event.streams[0];
+    remoteVideoRef.current.play().catch(e => console.error("Can't autoplay remote video:", e));
+  }
+};
 
   pc.oniceconnectionstatechange = () => {
     console.log('ICE connection state:', pc.iceConnectionState);
